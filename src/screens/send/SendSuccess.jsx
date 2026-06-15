@@ -76,7 +76,7 @@ export default function SendSuccess() {
   }, [txId]) // eslint-disable-line
 
   return (
-    <div className="flex flex-col min-h-full bg-white">
+    <div className="flex flex-col min-h-full bg-white lg:max-w-[560px] lg:mx-auto lg:w-full">
       <div className="flex flex-col px-6 pt-10 pb-6 gap-6">
 
         {/* Hero */}

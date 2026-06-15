@@ -37,7 +37,7 @@ export default function SendQuote() {
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-white">
+    <div className="flex flex-col min-h-full bg-white lg:max-w-[560px] lg:mx-auto lg:w-full">
       <ScreenHeader title="Exchange Rate" />
       <StepProgress steps={STEPS} currentStep={1} />
       <div className="px-5 pb-6 flex flex-col gap-4 mt-2">

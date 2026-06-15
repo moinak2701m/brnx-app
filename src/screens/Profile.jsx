@@ -30,7 +30,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-white">
+    <div className="flex flex-col min-h-full bg-white lg:max-w-[560px] lg:mx-auto lg:w-full">
       <div className="px-5 pt-5 pb-3">
         <h1 className="text-[20px] font-bold text-[#111827]">Profile</h1>
       </div>
