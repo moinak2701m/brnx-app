@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/((?!api/|assets/|pitch\\.html|.*\\..*).*)", "destination": "/index.html" }
+  ]
+}
