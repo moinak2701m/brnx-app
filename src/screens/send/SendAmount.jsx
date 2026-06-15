@@ -25,7 +25,7 @@ export default function SendAmount() {
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-white lg:max-w-[600px] lg:mx-auto lg:my-8 lg:rounded-2xl lg:shadow-sm lg:border lg:border-[#e5e7eb] lg:min-h-0">
+    <div className="flex flex-col min-h-full bg-white">
       <ScreenHeader title="Send Money" subtitle={`To ${beneficiary.name || ''}`} />
       <StepProgress steps={STEPS} currentStep={0} />
       <div className="px-5 pb-6 flex flex-col gap-4 mt-2">
