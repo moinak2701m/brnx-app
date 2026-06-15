@@ -14,7 +14,7 @@ export default function AuthenticatedLayout() {
     return (
       <div className="flex w-full h-screen bg-[#f9fafb]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 min-h-0 flex flex-col overflow-y-auto">
           <Outlet />
         </main>
       </div>
