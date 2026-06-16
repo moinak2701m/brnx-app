@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Bell, Plus, Landmark, User, Users, ArrowRight, Send as SendIcon, ArrowUpRight } from 'lucide-react'
 import Badge from '../components/ui/Badge'
 import TransactionRow from '../components/domain/TransactionRow'
+import NotificationsPanel from '../components/domain/NotificationsPanel'
 import { useStore } from '../store'
 import { getRate, formatINR, formatSource } from '../lib/fx'
 import useIsDesktop from '../hooks/useIsDesktop'
@@ -16,7 +17,7 @@ const PURPOSE_CONFIG = {
 
 // ─── Mobile ──────────────────────────────────────────────────────────────────
 
-function MobileHome({ user, beneficiaries, transactions, paymentSource, navigate, handleQuickSend }) {
+function MobileHome({ user, beneficiaries, transactions, paymentSource, navigate, handleQuickSend, unreadCount, onBellClick, showNotifications, onNotificationsClose, onMarkRead, notificationsRead }) {
   return (
     <div className="flex flex-col gap-0 pb-6 bg-white">
       <div className="flex items-center justify-between px-5 pt-5 pb-4">
@@ -24,10 +25,24 @@ function MobileHome({ user, beneficiaries, transactions, paymentSource, navigate
           <p className="text-xs text-[#9ca3af]">Good morning</p>
           <h1 className="text-[20px] font-bold text-[#111827]">{user?.name?.split(' ')[0]}</h1>
         </div>
-        <button className="w-9 h-9 rounded-full bg-[#f3f4f6] flex items-center justify-center relative">
-          <Bell size={18} className="text-[#6b7280]" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#dc2626]" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={onBellClick}
+            className="w-9 h-9 rounded-full bg-[#f3f4f6] flex items-center justify-center relative"
+          >
+            <Bell size={18} className="text-[#6b7280]" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#dc2626]" />
+            )}
+          </button>
+          {showNotifications && (
+            <NotificationsPanel
+              onClose={onNotificationsClose}
+              isRead={notificationsRead}
+              onMarkRead={onMarkRead}
+            />
+          )}
+        </div>
       </div>
 
       <div className="px-5 mb-5">
@@ -92,7 +107,7 @@ function MobileHome({ user, beneficiaries, transactions, paymentSource, navigate
 
 // ─── Desktop ─────────────────────────────────────────────────────────────────
 
-function DesktopHome({ user, beneficiaries, transactions, paymentSource, navigate, handleQuickSend }) {
+function DesktopHome({ user, beneficiaries, transactions, paymentSource, navigate, handleQuickSend, unreadCount, onBellClick, showNotifications, onNotificationsClose, onMarkRead, notificationsRead }) {
   const rate = useMemo(() => getRate('USD'), [])
   const bankRate = +(rate * 0.956).toFixed(2)
   const savingPerDollar = +(rate - bankRate).toFixed(2)
@@ -123,10 +138,24 @@ function DesktopHome({ user, beneficiaries, transactions, paymentSource, navigat
           <p className="text-[13px] text-[#9ca3af] font-medium mb-0.5">Good morning</p>
           <h1 className="text-[28px] font-bold text-[#0f172a] leading-tight">{user?.name?.split(' ')[0]}</h1>
         </div>
-        <button className="w-10 h-10 rounded-full bg-[#f8fafc] border border-[#e5e7eb] flex items-center justify-center relative">
-          <Bell size={17} className="text-[#64748b]" />
-          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-red-500" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={onBellClick}
+            className="w-10 h-10 rounded-full bg-[#f8fafc] border border-[#e5e7eb] flex items-center justify-center relative hover:bg-[#f1f5f9] transition-colors"
+          >
+            <Bell size={17} className="text-[#64748b]" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-red-500" />
+            )}
+          </button>
+          {showNotifications && (
+            <NotificationsPanel
+              onClose={onNotificationsClose}
+              isRead={notificationsRead}
+              onMarkRead={onMarkRead}
+            />
+          )}
+        </div>
       </div>
 
       {/* ── Rate + send widget ── */}
@@ -340,12 +369,39 @@ export default function Home() {
   const beneficiaries = useStore((s) => s.beneficiaries)
   const transactions  = useStore((s) => s.transactions)
   const paymentSource = useStore((s) => s.paymentSource)
+  const notificationsUnread = useStore((s) => s.notificationsUnread)
+  const markNotificationsRead = useStore((s) => s.markNotificationsRead)
+
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notificationsRead, setNotificationsRead] = useState(false)
+
+  const handleBellClick = () => {
+    setShowNotifications((v) => !v)
+    if (!notificationsRead) {
+      setNotificationsRead(true)
+      markNotificationsRead()
+    }
+  }
+
+  const handleMarkRead = () => {
+    setNotificationsRead(true)
+    markNotificationsRead()
+  }
 
   const handleQuickSend = (b) => {
     sessionStorage.setItem('send_beneficiary', JSON.stringify(b))
     navigate('/send/amount')
   }
 
-  const props = { user, beneficiaries, transactions, paymentSource, navigate, handleQuickSend }
+  const notifProps = {
+    unreadCount: notificationsUnread,
+    onBellClick: handleBellClick,
+    showNotifications,
+    onNotificationsClose: () => setShowNotifications(false),
+    onMarkRead: handleMarkRead,
+    notificationsRead,
+  }
+
+  const props = { user, beneficiaries, transactions, paymentSource, navigate, handleQuickSend, ...notifProps }
   return isDesktop ? <DesktopHome {...props} /> : <MobileHome {...props} />
 }

@@ -48,6 +48,10 @@ const useStore = create(
       activePayment: null,
       setActivePayment: (p) => set({ activePayment: p }),
       clearActivePayment: () => set({ activePayment: null }),
+
+      // Notifications
+      notificationsUnread: 2,
+      markNotificationsRead: () => set({ notificationsUnread: 0 }),
     }),
     {
       name: 'brnx-store-v4',
