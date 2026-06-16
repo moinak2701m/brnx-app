@@ -36,14 +36,15 @@ export default async function handler(req, res) {
     const quote = await getQuote({ amountUSD })
     const pvTx  = await executeOnRamp({ quoteId: quote.quoteid, externalId: id })
 
-    const bd = pvTx.source?.bankdetails ?? {}
+    // Bank details live in quoteResponse.depositInstructions.bankDetails
+    const bd = pvTx.quoteResponse?.depositInstructions?.bankDetails ?? {}
     const bankDetails = {
-      accountName:   bd.accountname   ?? DEMO_BANK.accountName,
-      bankName:      bd.bankname       ?? DEMO_BANK.bankName,
-      accountNumber: bd.accountnumber  ?? DEMO_BANK.accountNumber,
-      routingNumber: bd.routingnumber  ?? DEMO_BANK.routingNumber,
-      swift:         bd.swiftcode      ?? DEMO_BANK.swift,
-      iban:          bd.iban           ?? undefined,
+      accountName:   bd.beneficiaryName ?? DEMO_BANK.accountName,
+      bankName:      bd.bankName        ?? DEMO_BANK.bankName,
+      accountNumber: bd.accountNumber   ?? DEMO_BANK.accountNumber,
+      routingNumber: bd.routingNumber   ?? DEMO_BANK.routingNumber,
+      swift:         bd.swiftCode       ?? DEMO_BANK.swift,
+      bankAddress:   bd.bankAddress     ?? undefined,
     }
 
     await kvSet(`tx:${id}`, JSON.stringify({
