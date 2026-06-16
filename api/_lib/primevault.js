@@ -17,32 +17,30 @@ async function pvFetch(path, options = {}) {
   return JSON.parse(text)
 }
 
-// Returns a quote with quoteId + depositInstructions (wire details) + fees
-export async function getQuote({ amountUSD, toChain = 'ETHEREUM_TESTNET' }) {
+// Returns a quote with quoteid + deposit instructions (wire details) + fees
+export async function getQuote({ amountUSD, toChain = 'ethereum' }) {
   const quotes = await pvFetch('/api/external/transactions/quote/', {
     method: 'POST',
     body: JSON.stringify({
-      destination:     { type: 'VAULT', id: TREASURY_VAULT },
-      fromAsset:       'USD',
+      destination:     { type: 'vault', id: TREASURY_VAULT },
+      fromAsset:       'usd',
       fromAmount:      String(amountUSD),
-      toAsset:         'USDC',
-      toChain,
-      fromPaymentRail: 'WIRE',
-      category:        'RAMP',
+      toAsset:         'usdc',
+      toChain:         toChain,
+      fromPaymentRail: 'us wire',
     }),
   })
   if (!Array.isArray(quotes) || !quotes[0]) throw new Error('No quotes returned')
   return quotes[0]
 }
 
-// Execute the on-ramp using a locked quoteId
+// Execute the on-ramp using a locked quoteid
 export async function executeOnRamp({ quoteId, externalId }) {
   return pvFetch('/api/external/transactions/', {
     method: 'POST',
     body: JSON.stringify({
-      quoteId,
+      quoteid:    quoteId,
       externalid: externalId,
-      category: 'RAMP',
     }),
   })
 }
