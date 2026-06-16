@@ -1,4 +1,4 @@
-const MID_RATES = { USD: 85.50, EUR: 92.40, SGD: 63.60 }
+const MID_RATES = { USD: 95.00, EUR: 103.00, SGD: 70.80 }
 
 export function getRate(currency = 'USD') {
   const mid = MID_RATES[currency] ?? 95.00
