@@ -34,10 +34,12 @@ export default async function handler(req, res) {
   try {
     const id = txId()
     const quote = await getQuote({ amountUSD })
-    const pvTx  = await executeOnRamp({ quoteId: quote.quoteid, externalId: id })
+    const pvTx  = await executeOnRamp({ quoteId: quote.quoteId, externalId: id })
 
-    // Bank details live in quoteResponse.depositInstructions.bankDetails
-    const bd = pvTx.quoteResponse?.depositInstructions?.bankDetails ?? {}
+    // Bank details are in quote.depositInstructions or pvTx.depositInstructions
+    const bd = quote.depositInstructions?.bankDetails
+           ?? pvTx.depositInstructions?.bankDetails
+           ?? {}
     const bankDetails = {
       accountName:   bd.beneficiaryName ?? DEMO_BANK.accountName,
       bankName:      bd.bankName        ?? DEMO_BANK.bankName,
@@ -54,7 +56,8 @@ export default async function handler(req, res) {
       amountINR,
       beneficiary,
       pvTransactionId: pvTx.id,
-      pvQuoteId: quote.quoteid,
+      pvQuoteId: quote.quoteId,
+      pvStatus: pvTx.status ?? null,
       bankDetails,
       createdAt: Date.now(),
       updatedAt: Date.now(),

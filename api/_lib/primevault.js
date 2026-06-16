@@ -17,36 +17,34 @@ async function pvFetch(path, options = {}) {
   return JSON.parse(text)
 }
 
-// Returns a quote with quoteid + deposit instructions (wire details) + fees
-export async function getQuote({ amountUSD, toChain = 'ethereum' }) {
-  const quotes = await pvFetch('/api/external/transactions/quote/', {
-    method: 'POST',
-    body: JSON.stringify({
-      destination:     { type: 'vault', id: TREASURY_VAULT },
-      fromAsset:       'usd',
-      fromAmount:      String(amountUSD),
-      toAsset:         'usdc',
-      toChain:         toChain,
-      fromPaymentRail: 'us wire',
-    }),
-  })
-  if (!Array.isArray(quotes) || !quotes[0]) throw new Error('No quotes returned')
-  return quotes[0]
+// Get an on-ramp quote — user wires USD, USDC lands in treasury vault.
+// Uses exact-out: toAmount = USDC desired. finalFromAmount is USD to wire.
+// Returns quote object including depositInstructions.bankDetails.
+export async function getQuote({ amountUSD, toChain = 'ETHEREUM_TESTNET' }) {
+  const intent = {
+    source:          { type: 'EXTERNAL_BANK_ACCOUNT' },
+    destination:     { type: 'VAULT', id: TREASURY_VAULT },
+    fromAsset:       'USD',
+    toAmount:        String(amountUSD),
+    toAsset:         'USDC',
+    toChain,
+    fromPaymentRail: 'us wire',
+  }
+  const data = await pvFetch('/ramp/quote', { method: 'POST', body: JSON.stringify({ intent }) })
+  if (!data.quotes?.[0]) throw new Error('No quotes returned')
+  return data.quotes[0]   // { quoteId, rate, fees, finalFromAmount, depositInstructions }
 }
 
-// Execute the on-ramp using a locked quoteid
+// Execute on-ramp — returns transaction with depositInstructions.bankDetails (wire instructions)
 export async function executeOnRamp({ quoteId, externalId }) {
-  return pvFetch('/api/external/transactions/', {
+  return pvFetch('/ramp/transaction', {
     method: 'POST',
-    body: JSON.stringify({
-      quoteid:    quoteId,
-      externalid: externalId,
-    }),
+    body: JSON.stringify({ quoteId, externalId }),
   })
 }
 
 export async function getTransaction(pvTxId) {
-  return pvFetch(`/api/external/transactions/${pvTxId}/`)
+  return pvFetch(`/ramp/transaction/${pvTxId}`)
 }
 
 export async function sendUSDC({ toAddress, amount, externalId }) {
