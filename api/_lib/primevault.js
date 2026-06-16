@@ -2,9 +2,9 @@
 // In dev:  PRIMEVAULT_PROXY_URL defaults to localhost:3333 (primevault-test)
 // In prod: set PRIMEVAULT_PROXY_URL to the deployed proxy (e.g. Railway)
 
-const PROXY = (process.env.PRIMEVAULT_PROXY_URL ?? 'http://localhost:3333').replace(/\/$/, '')
+const PROXY = (process.env.PRIMEVAULT_PROXY_URL ?? 'http://localhost:3333').trim().replace(/\/$/, '')
 // BRNX_TESTNET vault — receives wired USD and mints USDC
-const TREASURY_VAULT = process.env.PRIMEVAULT_BL_TREASURY_VAULT_ID ?? '56fc0fe1-b5a2-469e-a06e-f71039c7481c'
+const TREASURY_VAULT = (process.env.PRIMEVAULT_BL_TREASURY_VAULT_ID ?? '56fc0fe1-b5a2-469e-a06e-f71039c7481c').trim()
 
 async function pvFetch(path, options = {}) {
   const normalizedPath = path.endsWith('/') ? path : path + '/'
