@@ -17,7 +17,12 @@ const mem = new Map()
 
 export async function kvGet(key) {
   const client = getClient()
-  if (client) return client.get(key)
+  if (client) {
+    const val = await client.get(key)
+    // Upstash auto-deserializes JSON; re-serialize so callers can JSON.parse uniformly
+    if (val === null) return null
+    return typeof val === 'string' ? val : JSON.stringify(val)
+  }
   return mem.get(key) ?? null
 }
 
