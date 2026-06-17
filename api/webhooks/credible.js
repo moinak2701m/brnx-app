@@ -1,12 +1,10 @@
+import { eq } from 'drizzle-orm'
 import { verifyWebhookSignature } from '../_lib/credible.js'
-import { kvGet, kvSet } from '../_lib/kv.js'
-
-const TTL = 60 * 60 * 24 * 7
+import { getDb, schema } from '../_lib/db.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  // Respond 200 immediately — Credible retries with exponential backoff if we don't
   res.status(200).json({ received: true })
 
   const body = req.body ?? {}
@@ -22,31 +20,19 @@ export default async function handler(req, res) {
   if (!merchant_payout_id) return
 
   try {
-    const raw = await kvGet(`tx:${merchant_payout_id}`)
-    if (!raw) {
-      console.warn('[credible webhook] unknown merchant_payout_id:', merchant_payout_id)
-      return
-    }
-
-    const tx = JSON.parse(raw)
+    const db = getDb()
 
     if (event_name === 'payout_completed') {
-      await kvSet(`tx:${merchant_payout_id}`, JSON.stringify({
-        ...tx,
-        status: 'completed',
-        crediblePayoutId: payout_id ?? tx.crediblePayoutId,
-        updatedAt: Date.now(),
-      }), { ex: TTL })
+      await db.update(schema.transactions)
+        .set({ status: 'completed', crediblePayoutId: payout_id, updatedAt: new Date() })
+        .where(eq(schema.transactions.id, merchant_payout_id))
       console.log('[credible webhook] payout_completed for', merchant_payout_id)
     }
 
     if (event_name === 'payout_failed') {
-      await kvSet(`tx:${merchant_payout_id}`, JSON.stringify({
-        ...tx,
-        status: 'failed',
-        failureReason: payout_failure_reason ?? 'Payout failed',
-        updatedAt: Date.now(),
-      }), { ex: TTL })
+      await db.update(schema.transactions)
+        .set({ status: 'failed', failureReason: payout_failure_reason ?? 'Payout failed', updatedAt: new Date() })
+        .where(eq(schema.transactions.id, merchant_payout_id))
       console.error('[credible webhook] payout_failed for', merchant_payout_id, payout_failure_reason)
     }
   } catch (err) {

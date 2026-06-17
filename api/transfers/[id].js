@@ -1,10 +1,8 @@
+import { eq } from 'drizzle-orm'
 import { getTransaction, sendUSDC } from '../_lib/primevault.js'
 import { getDepositAddress, initiatePayout } from '../_lib/credible.js'
-import { kvGet, kvSet } from '../_lib/kv.js'
+import { getDb, schema } from '../_lib/db.js'
 
-const TTL = 60 * 60 * 24 * 7
-
-// Map internal status → tracker stage index shown in SendSuccess
 export const STATUS_STAGE = {
   pending_wire:     0,
   wire_received:    1,
@@ -15,8 +13,7 @@ export const STATUS_STAGE = {
   failed:          -1,
 }
 
-// ── Demo mode ────────────────────────────────────────────────────────────────
-// txId encodes creation timestamp so stage advances automatically without KV
+// ── Demo mode ─────────────────────────────────────────────────────────────────
 function demoStatus(txId) {
   const ts = parseInt(txId.split('_')[1], 10)
   if (isNaN(ts)) return 'pending_wire'
@@ -29,93 +26,98 @@ function demoStatus(txId) {
   return 'completed'
 }
 
-// ── Advance state machine ─────────────────────────────────────────────────────
-// Called on each poll; triggers the next step if conditions are met.
-// All transitions are idempotent — KV status guards against double-execution.
+// ── State machine ─────────────────────────────────────────────────────────────
 async function advanceIfNeeded(tx) {
-  // 1. pending_wire / wire_received — poll PrimeVault until on-ramp completes
+  const db = getDb()
+
+  // 1. Poll PrimeVault until on-ramp completes
   if (['pending_wire', 'wire_received'].includes(tx.status) && tx.pvTransactionId) {
     try {
       const pvTx = await getTransaction(tx.pvTransactionId)
       if (pvTx.status === 'COMPLETED') {
-        tx = { ...tx, status: 'usdc_received', updatedAt: Date.now() }
-        await kvSet(`tx:${tx.id}`, JSON.stringify(tx), { ex: TTL })
+        await db.update(schema.transactions)
+          .set({ status: 'usdc_received', updatedAt: new Date() })
+          .where(eq(schema.transactions.id, tx.id))
+        return { ...tx, status: 'usdc_received' }
       }
-    } catch (_) {
-      // PrimeVault unreachable — continue with stored status, retry next poll
-    }
+    } catch (_) {}
   }
 
-  // 2. usdc_received — send USDC to Credible + immediately initiate INR payout
+  // 2. Send USDC to Credible + initiate INR payout
   if (tx.status === 'usdc_received') {
     try {
+      console.log('[advance] step1: getDepositAddress')
       const { address } = await getDepositAddress('ethereum', 'usdc')
+      console.log('[advance] step1 ok, address:', address)
 
+      console.log('[advance] step2: sendUSDC', tx.amountUsd, '->', address)
       await sendUSDC({
-        toAddress: address,
-        amount: tx.amountUSD,
+        toAddress:  address,
+        amount:     tx.amountUsd,
         externalId: `${tx.id}_usdc`,
       })
+      console.log('[advance] step2 ok')
 
-      tx = { ...tx, status: 'usdc_sent', credibleDepositAddress: address, updatedAt: Date.now() }
-      await kvSet(`tx:${tx.id}`, JSON.stringify(tx), { ex: TTL })
+      await db.update(schema.transactions)
+        .set({ status: 'usdc_sent', credibleDepositAddress: address, updatedAt: new Date() })
+        .where(eq(schema.transactions.id, tx.id))
 
+      const ben = tx.beneficiarySnapshot ?? {}
+      console.log('[advance] step3: initiatePayout', tx.amountInr, 'INR to', ben.accountNumber)
       const payout = await initiatePayout({
-        amount: tx.amountINR,
-        currency: 'inr',
-        account_number: tx.beneficiary.accountNumber,
-        ifsc: tx.beneficiary.ifsc,
-        account_holder_name: tx.beneficiary.name,
-        merchant_payout_id: tx.id,
-        wallet: 'deposit',
-        payout_process_type: 'IMPS',
+        amount:               tx.amountInr,
+        currency:             'inr',
+        account_number:       ben.accountNumber,
+        ifsc:                 ben.ifsc,
+        account_holder_name:  ben.name,
+        merchant_payout_id:   tx.id,
+        wallet:               'deposit',
+        payout_process_type:  'IMPS',
       })
+      console.log('[advance] step3 ok, payout_id:', payout.payout_id)
 
-      tx = { ...tx, status: 'payout_initiated', crediblePayoutId: payout.payout_id, updatedAt: Date.now() }
-      await kvSet(`tx:${tx.id}`, JSON.stringify(tx), { ex: TTL })
+      await db.update(schema.transactions)
+        .set({ status: 'payout_initiated', crediblePayoutId: payout.payout_id, updatedAt: new Date() })
+        .where(eq(schema.transactions.id, tx.id))
+
+      return { ...tx, status: 'payout_initiated' }
     } catch (err) {
-      console.error('[advance] usdc_received step failed:', err.message)
-      // Do not crash — status stays at usdc_received and will retry next poll
+      console.error('[advance] usdc_received failed:', err.message)
     }
   }
 
   return tx
 }
 
-// ── Handler ──────────────────────────────────────────────────────────────────
+// ── Handler ───────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
 
   const { id } = req.query
 
-  // Demo / degraded txIds: advance stages on elapsed time, no KV needed
   if (id?.startsWith('demo_')) {
     const status = demoStatus(id)
-    return res.status(200).json({
-      txId: id,
-      status,
-      stage: STATUS_STAGE[status] ?? 0,
-      done: status === 'completed',
-    })
+    return res.status(200).json({ txId: id, status, stage: STATUS_STAGE[status] ?? 0, done: status === 'completed' })
   }
 
   try {
-    const raw = await kvGet(`tx:${id}`)
-    if (!raw) return res.status(404).json({ error: 'Transaction not found' })
+    const db = getDb()
+    const [tx] = await db.select().from(schema.transactions)
+      .where(eq(schema.transactions.id, id))
+      .limit(1)
 
-    let tx = JSON.parse(raw)
+    if (!tx) return res.status(404).json({ error: 'Transaction not found' })
 
-    // Only advance if there is meaningful work to do
-    if (!['payout_initiated', 'completed', 'failed'].includes(tx.status)) {
-      tx = await advanceIfNeeded(tx)
-    }
+    const advanced = ['payout_initiated', 'completed', 'failed'].includes(tx.status)
+      ? tx
+      : await advanceIfNeeded(tx)
 
     return res.status(200).json({
-      txId: tx.id,
-      status: tx.status,
-      stage: STATUS_STAGE[tx.status] ?? 0,
-      done: tx.status === 'completed',
-      failureReason: tx.failureReason ?? null,
+      txId:          advanced.id,
+      status:        advanced.status,
+      stage:         STATUS_STAGE[advanced.status] ?? 0,
+      done:          advanced.status === 'completed',
+      failureReason: advanced.failureReason ?? null,
     })
   } catch (err) {
     console.error('[status]', err)
