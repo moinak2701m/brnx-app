@@ -43,6 +43,7 @@ export const transactions = pgTable('transactions', {
   crediblePayoutId:       varchar('credible_payout_id', { length: 64 }),
   credibleDepositAddress: varchar('credible_deposit_address', { length: 128 }),
   failureReason:          text('failure_reason'),
+  lastError:              text('last_error'),
   createdAt:              timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt:              timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [

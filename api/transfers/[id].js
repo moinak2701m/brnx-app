@@ -82,7 +82,12 @@ async function advanceIfNeeded(tx) {
 
       return { ...tx, status: 'payout_initiated' }
     } catch (err) {
-      console.error('[advance] usdc_received failed:', err.message)
+      const msg = err.message ?? String(err)
+      console.error('[advance] usdc_received failed:', msg)
+      await db.update(schema.transactions)
+        .set({ lastError: msg, updatedAt: new Date() })
+        .where(eq(schema.transactions.id, tx.id))
+        .catch(() => {})
     }
   }
 
@@ -118,6 +123,7 @@ export default async function handler(req, res) {
       stage:         STATUS_STAGE[advanced.status] ?? 0,
       done:          advanced.status === 'completed',
       failureReason: advanced.failureReason ?? null,
+      lastError:     advanced.lastError ?? null,
     })
   } catch (err) {
     console.error('[status]', err)
