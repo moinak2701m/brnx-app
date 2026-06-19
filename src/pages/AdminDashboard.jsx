@@ -264,13 +264,24 @@ function VaultDetail({ detail }) {
 // ── Transactions view ─────────────────────────────────────────────────────────
 function TransactionsView() {
   const [txs, setTxs]         = useState([])
+  const [vaultMap, setVaultMap] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
+  const [expanded, setExpanded] = useState(null)
 
   function load() {
     setLoading(true)
-    api.listTransactions()
-      .then(d => setTxs(d.results ?? d.transactions ?? d ?? []))
+    Promise.all([
+      api.listTransactions(),
+      api.listVaults().catch(() => ({ results: [] })),
+    ])
+      .then(([txData, vData]) => {
+        setTxs(txData.results ?? txData.transactions ?? txData ?? [])
+        const m = {}
+        const list = vData.results ?? vData.vaults ?? vData ?? []
+        list.forEach(v => { m[v.id] = v.vaultName ?? v.name })
+        setVaultMap(m)
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }
@@ -280,6 +291,18 @@ function TransactionsView() {
   if (loading) return <Spinner label="Loading transactions…" />
   if (error)   return <ErrorBox message={error} />
 
+  function vaultLabel(id) {
+    if (!id) return null
+    return vaultMap[id] ? `${vaultMap[id]}` : id.slice(0, 12) + '…'
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '—'
+    const d = new Date(iso)
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+      d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -287,22 +310,91 @@ function TransactionsView() {
         <Btn onClick={load}>↻ Refresh</Btn>
       </div>
       <Card>
+        {/* Header */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1.8fr 2fr 1fr 1fr 1fr',
+          gap: 12, padding: '10px 16px',
+          borderBottom: '1px solid #e5e7eb', fontSize: 11,
+          fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em',
+        }}>
+          <div>Transaction</div>
+          <div>From → To</div>
+          <div>Amount</div>
+          <div>Time</div>
+          <div>Status</div>
+        </div>
+
         {txs.length === 0 && <EmptyState label="No transactions" />}
-        {txs.map((tx, i) => (
-          <div key={tx.id ?? i} style={{
-            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
-            gap: 12, padding: '12px 16px', alignItems: 'center',
-            borderBottom: i < txs.length - 1 ? '1px solid #f3f4f6' : 'none',
-            fontSize: 12,
-          }}>
-            <div style={{ fontFamily: 'monospace', color: '#374151', fontSize: 11 }}>{tx.id?.slice(0, 24)}…</div>
-            <div style={{ color: '#6b7280' }}>{tx.asset ?? '—'}</div>
-            <div style={{ fontWeight: 600 }}>{tx.amount ?? '—'}</div>
-            <div style={{ color: '#6b7280', fontSize: 11 }}>{tx.blockChain ?? '—'}</div>
-            <StatusBadge status={tx.status} />
-          </div>
-        ))}
+        {txs.map((tx, i) => {
+          const isExpanded = expanded === tx.id
+          const isOut = tx.transactionType === 'OUTGOING'
+          const from = vaultLabel(tx.vaultId) ?? tx.sourceAddress?.slice(0, 14) + '…'
+          const to = vaultLabel(tx.toVaultId) ?? tx.toAddressName ?? tx.toAddress?.slice(0, 14) + '…'
+          return (
+            <div key={tx.id ?? i}>
+              <div
+                onClick={() => setExpanded(isExpanded ? null : tx.id)}
+                style={{
+                  display: 'grid', gridTemplateColumns: '1.8fr 2fr 1fr 1fr 1fr',
+                  gap: 12, padding: '12px 16px', alignItems: 'center',
+                  borderBottom: '1px solid #f3f4f6', fontSize: 12,
+                  cursor: 'pointer', background: isExpanded ? '#f9fafb' : 'transparent',
+                  transition: 'background 0.1s',
+                }}>
+                {/* TX ID */}
+                <div>
+                  <div style={{ fontFamily: 'monospace', color: '#374151', fontSize: 11 }}>{tx.id?.slice(0, 22)}…</div>
+                  <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{tx.category ?? ''} · {tx.subCategory ?? ''}</div>
+                </div>
+                {/* From → To */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                  <span style={{ fontSize: 11, color: isOut ? '#7c3aed' : '#065f46', fontWeight: 600, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{from}</span>
+                  <span style={{ color: '#d1d5db', flexShrink: 0 }}>→</span>
+                  <span style={{ fontSize: 11, color: isOut ? '#374151' : '#1a56db', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{to}</span>
+                </div>
+                {/* Amount */}
+                <div>
+                  <div style={{ fontWeight: 700, color: isOut ? '#7c3aed' : '#065f46', fontSize: 13 }}>
+                    {isOut ? '−' : '+'}{tx.amount ?? '—'} <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 400 }}>{tx.asset}</span>
+                  </div>
+                  {tx.blockChain && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{tx.blockChain.replace('_TESTNET', ' Testnet')}</div>}
+                </div>
+                {/* Time */}
+                <div style={{ fontSize: 11, color: '#6b7280' }}>{fmtTime(tx.createdAt)}</div>
+                {/* Status */}
+                <StatusBadge status={tx.status} />
+              </div>
+
+              {/* Expanded detail */}
+              {isExpanded && (
+                <div style={{ background: '#f9fafb', borderBottom: '1px solid #f3f4f6', padding: '12px 16px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  <DetailCell label="Transaction ID" value={tx.id} mono />
+                  <DetailCell label="From Vault" value={vaultLabel(tx.vaultId) ?? '—'} />
+                  <DetailCell label="To Vault" value={vaultLabel(tx.toVaultId) ?? '—'} />
+                  <DetailCell label="Source Address" value={tx.sourceAddress ?? '—'} mono />
+                  <DetailCell label="To Address" value={tx.toAddress ?? '—'} mono />
+                  <DetailCell label="To Address Name" value={tx.toAddressName ?? '—'} />
+                  <DetailCell label="Tx Hash" value={tx.txHash ?? '—'} mono />
+                  <DetailCell label="Created At" value={tx.createdAt ? new Date(tx.createdAt).toLocaleString() : '—'} />
+                  <DetailCell label="Updated At" value={tx.updatedAt ? new Date(tx.updatedAt).toLocaleString() : '—'} />
+                  <DetailCell label="Amount (USD)" value={tx.amountInUSD ? `$${tx.amountInUSD}` : '—'} />
+                  <DetailCell label="Type" value={tx.transactionType ?? '—'} />
+                  <DetailCell label="Created By" value={tx.createdBy ? `${tx.createdBy.firstName} ${tx.createdBy.lastName}`.trim() || tx.createdBy.email || '—' : '—'} />
+                </div>
+              )}
+            </div>
+          )
+        })}
       </Card>
+    </div>
+  )
+}
+
+function DetailCell({ label, value, mono }) {
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 11, color: '#111827', fontFamily: mono ? 'monospace' : 'inherit', wordBreak: 'break-all' }}>{value}</div>
     </div>
   )
 }
