@@ -14,6 +14,7 @@ const api = {
   getVault:            (id) => pvFetch(`/api/external/vaults/${id}/`),
   getBalances:         (id) => pvFetch(`/api/external/vaults/${id}/balances/`),
   getDetailedBalances: (id) => pvFetch(`/api/external/vaults/${id}/detailed_balances/`),
+  createVault:         (b)  => pvFetch('/api/external/vaults/', { method: 'POST', body: JSON.stringify(b) }),
   listTransactions:    ()   => pvFetch('/api/external/transactions/'),
   getTransaction:      (id) => pvFetch(`/api/external/transactions/${id}/`),
   estimateFee:         (b)  => pvFetch('/api/external/transactions/estimate_fee/', { method: 'POST', body: JSON.stringify(b) }),
@@ -84,8 +85,9 @@ function VaultsView({ onSelectVault, selectedVaultId }) {
   const [error, setError]     = useState(null)
   const [detail, setDetail]   = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
 
-  useEffect(() => {
+  function loadVaults() {
     setLoading(true)
     api.listVaults()
       .then(d => {
@@ -103,7 +105,9 @@ function VaultsView({ onSelectVault, selectedVaultId }) {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { loadVaults() }, [])
 
   function selectVault(v) {
     onSelectVault(v)
@@ -123,10 +127,20 @@ function VaultsView({ onSelectVault, selectedVaultId }) {
   if (error)   return <ErrorBox message={error} />
 
   return (
+    <>
+    {showCreate && (
+      <CreateVaultModal
+        onClose={() => setShowCreate(false)}
+        onCreated={() => { setShowCreate(false); loadVaults() }}
+      />
+    )}
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
       {/* Vault list */}
       <div>
-        <SectionTitle>Vaults ({vaults.length})</SectionTitle>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Vaults ({vaults.length})</SectionTitle>
+          <Btn onClick={() => setShowCreate(true)}>+ Create Vault</Btn>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {vaults.map(v => {
             const bal = usdcFrom(balMap[v.id] ?? {})
@@ -167,6 +181,7 @@ function VaultsView({ onSelectVault, selectedVaultId }) {
         {detail && !detailLoading && !detail.error && <VaultDetail detail={detail} />}
       </div>
     </div>
+    </>
   )
 }
 
@@ -591,6 +606,80 @@ function SendView() {
             )}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ── Create Vault Modal ────────────────────────────────────────────────────────
+function CreateVaultModal({ onClose, onCreated }) {
+  const [name, setName]         = useState('')
+  const [isTestnet, setIsTestnet] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError]       = useState(null)
+
+  async function submit(e) {
+    e.preventDefault()
+    if (!name.trim()) return
+    setSubmitting(true); setError(null)
+    try {
+      await api.createVault({ vaultName: name.trim(), isTestNetVault: isTestnet })
+      onCreated()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: '#fff', borderRadius: 16, padding: 32, width: 420,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Create Vault</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>×</button>
+        </div>
+
+        <form onSubmit={submit}>
+          <Field label="Vault Name">
+            <NativeInput
+              type="text"
+              value={name}
+              onChange={setName}
+              placeholder="e.g. Borderless Treasury"
+            />
+          </Field>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 24px' }}>
+            <input
+              id="testnet-toggle"
+              type="checkbox"
+              checked={isTestnet}
+              onChange={e => setIsTestnet(e.target.checked)}
+              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#1a56db' }}
+            />
+            <label htmlFor="testnet-toggle" style={{ fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer' }}>
+              Testnet vault
+            </label>
+            {isTestnet && <TestnetBadge />}
+          </div>
+
+          {error && <ErrorBox message={error} />}
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <Btn secondary onClick={onClose} disabled={submitting}>Cancel</Btn>
+            <Btn disabled={submitting || !name.trim()}>
+              {submitting ? 'Creating…' : 'Create Vault'}
+            </Btn>
+          </div>
+        </form>
       </div>
     </div>
   )
