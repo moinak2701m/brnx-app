@@ -43,6 +43,14 @@ export default function AdminDashboard() {
   const [outboundIp, setOutboundIp] = useState(null)
 
   useEffect(() => {
+    // Parent App wrapper uses overflow:hidden for the phone-frame demo; undo it here.
+    const el = document.documentElement
+    const prev = el.style.overflow
+    el.style.overflow = 'auto'
+    return () => { el.style.overflow = prev }
+  }, [])
+
+  useEffect(() => {
     api.getOutboundIp().then(d => setOutboundIp(d.ip)).catch(() => {})
   }, [])
 
