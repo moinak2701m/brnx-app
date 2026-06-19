@@ -49,7 +49,7 @@ export default function AdminDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif' }}>
       {/* Top nav */}
-      <div style={{ background: '#1a56db', padding: '0 32px', display: 'flex', alignItems: 'center', gap: 32, height: 56 }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: '#1a56db', padding: '0 32px', display: 'flex', alignItems: 'center', gap: 32, height: 56 }}>
         <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>BRNX Admin · PrimeVault</span>
         <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
           {[['vaults', 'Vaults'], ['txns', 'Transactions'], ['send', 'Send']].map(([v, label]) => (
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      <div style={{ padding: '32px', maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{ padding: '32px', paddingTop: 88, maxWidth: 1200, margin: '0 auto' }}>
         {view === 'vaults' && <VaultsView onSelectVault={setSelectedVault} selectedVaultId={selectedVault?.id} />}
         {view === 'txns'   && <TransactionsView />}
         {view === 'send'   && <SendView />}
