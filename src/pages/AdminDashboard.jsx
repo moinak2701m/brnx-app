@@ -1,9 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 
-const PROXY = '/api/pv-admin'
-
 async function pvFetch(path, opts = {}) {
-  const res = await fetch(`${PROXY}${path}`, {
+  const res = await fetch(`/api/pvproxy?p=${encodeURIComponent(path)}`, {
     headers: { 'Content-Type': 'application/json', ...opts.headers },
     ...opts,
   })
