@@ -21,8 +21,10 @@ import TransactionList from './screens/TransactionList'
 import TransactionDetail from './screens/TransactionDetail'
 import Profile from './screens/Profile'
 import PaymentSource from './screens/PaymentSource'
+import AdminDashboard from './pages/AdminDashboard'
 
 export const router = createBrowserRouter([
+  { path: '/admin', element: <AdminDashboard /> },
   { path: '/', element: <Navigate to="/splash" replace /> },
   { path: '/splash', element: <Splash /> },
   { path: '/login', element: <Login /> },
