@@ -156,7 +156,11 @@ function VaultsView({ onSelectVault, selectedVaultId }) {
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14, color: '#111827' }}>{v.vaultName ?? v.name}</div>
                   <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace', marginTop: 2 }}>{v.id.slice(0, 20)}…</div>
-                  {v.isTestNetVault && <TestnetBadge />}
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                    {v.isTestNetVault && <TestnetBadge />}
+                    {v.pendingApproval && <PendingBadge />}
+                    {!v.walletsGenerated && <NoWalletBadge />}
+                  </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: '#1a56db' }}>
@@ -613,17 +617,19 @@ function SendView() {
 
 // ── Create Vault Modal ────────────────────────────────────────────────────────
 function CreateVaultModal({ onClose, onCreated }) {
-  const [name, setName]         = useState('')
+  const [name, setName]           = useState('')
   const [isTestnet, setIsTestnet] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError]       = useState(null)
+  const [error, setError]         = useState(null)
+  const [created, setCreated]     = useState(null)
 
   async function submit(e) {
     e.preventDefault()
     if (!name.trim()) return
     setSubmitting(true); setError(null)
     try {
-      await api.createVault({ vaultName: name.trim(), isTestNetVault: isTestnet })
+      const vault = await api.createVault({ vaultName: name.trim(), isTestNetVault: isTestnet })
+      setCreated(vault)
       onCreated()
     } catch (err) {
       setError(err.message)
@@ -637,49 +643,74 @@ function CreateVaultModal({ onClose, onCreated }) {
       position: 'fixed', inset: 0, zIndex: 200,
       background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }} onClick={onClose}>
+    }} onClick={created ? onClose : onClose}>
       <div style={{
-        background: '#fff', borderRadius: 16, padding: 32, width: 420,
+        background: '#fff', borderRadius: 16, padding: 32, width: 440,
         boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Create Vault</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>×</button>
-        </div>
 
-        <form onSubmit={submit}>
-          <Field label="Vault Name">
-            <NativeInput
-              type="text"
-              value={name}
-              onChange={setName}
-              placeholder="e.g. Borderless Treasury"
-            />
-          </Field>
+        {created ? (
+          /* Success state */
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 24 }}>✓</div>
+            <h2 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: '#111827' }}>Vault Created</h2>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>{created.vaultName}</p>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 24px' }}>
-            <input
-              id="testnet-toggle"
-              type="checkbox"
-              checked={isTestnet}
-              onChange={e => setIsTestnet(e.target.checked)}
-              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#1a56db' }}
-            />
-            <label htmlFor="testnet-toggle" style={{ fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer' }}>
-              Testnet vault
-            </label>
-            {isTestnet && <TestnetBadge />}
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '14px 16px', marginBottom: 20, textAlign: 'left' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>Pending org approval</div>
+              <div style={{ fontSize: 12, color: '#78350f', lineHeight: 1.6 }}>
+                PrimeVault requires an org admin to approve new vaults before wallet addresses are generated.
+                Once approved, wallets for Ethereum, Solana, and Bitcoin will be created automatically via your org template.
+              </div>
+            </div>
+
+            <div style={{ background: '#f9fafb', borderRadius: 8, padding: '10px 14px', marginBottom: 20, textAlign: 'left' }}>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>Vault ID</div>
+              <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#111827', wordBreak: 'break-all' }}>{created.id}</div>
+            </div>
+
+            <Btn onClick={onClose}>Done</Btn>
           </div>
+        ) : (
+          /* Form state */
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Create Vault</h2>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>×</button>
+            </div>
 
-          {error && <ErrorBox message={error} />}
+            <form onSubmit={submit}>
+              <Field label="Vault Name">
+                <NativeInput type="text" value={name} onChange={setName} placeholder="e.g. Borderless Treasury" />
+              </Field>
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-            <Btn secondary onClick={onClose} disabled={submitting}>Cancel</Btn>
-            <Btn disabled={submitting || !name.trim()}>
-              {submitting ? 'Creating…' : 'Create Vault'}
-            </Btn>
-          </div>
-        </form>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 12px' }}>
+                <input
+                  id="testnet-toggle" type="checkbox" checked={isTestnet}
+                  onChange={e => setIsTestnet(e.target.checked)}
+                  style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#1a56db' }}
+                />
+                <label htmlFor="testnet-toggle" style={{ fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer' }}>
+                  Testnet vault
+                </label>
+                {isTestnet && <TestnetBadge />}
+              </div>
+
+              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 12, color: '#0369a1', lineHeight: 1.6 }}>
+                Wallet addresses (Ethereum, Solana, Bitcoin) are generated automatically after an org admin approves the vault.
+              </div>
+
+              {error && <ErrorBox message={error} />}
+
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                <Btn secondary onClick={onClose} disabled={submitting}>Cancel</Btn>
+                <Btn disabled={submitting || !name.trim()}>
+                  {submitting ? 'Creating…' : 'Create Vault'}
+                </Btn>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   )
@@ -767,7 +798,15 @@ function Btn({ children, onClick, disabled, secondary }) {
 }
 
 function TestnetBadge() {
-  return <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#92400e', padding: '2px 6px', borderRadius: 4, marginTop: 4, display: 'inline-block' }}>TESTNET</span>
+  return <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#92400e', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>TESTNET</span>
+}
+
+function PendingBadge() {
+  return <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#b45309', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>PENDING APPROVAL</span>
+}
+
+function NoWalletBadge() {
+  return <span style={{ fontSize: 10, fontWeight: 700, background: '#f3f4f6', color: '#6b7280', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>NO WALLETS</span>
 }
 
 function StatusBadge({ status }) {
