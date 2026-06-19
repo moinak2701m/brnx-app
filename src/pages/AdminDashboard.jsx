@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 
-const PROXY = import.meta.env.VITE_PV_PROXY_URL ?? 'http://168.144.180.100:8080'
+const PROXY = '/api/pv-admin'
 
 async function pvFetch(path, opts = {}) {
   const res = await fetch(`${PROXY}${path}`, {
