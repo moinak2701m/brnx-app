@@ -156,7 +156,7 @@ function VaultsView({ onSelectVault, selectedVaultId }) {
       </div>
 
       {/* Vault detail */}
-      <div>
+      <div style={{ position: 'sticky', top: 88, alignSelf: 'start' }}>
         {!selectedVaultId && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, color: '#9ca3af', fontSize: 14 }}>
             Select a vault to view details
