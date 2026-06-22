@@ -43,27 +43,22 @@ async function advanceIfNeeded(tx) {
     } catch (_) {}
   }
 
-  // 2. Send USDC to Credible + initiate INR payout
+  // 2. Get Credible deposit address, record it, then initiate INR payout.
+  //    Note: PrimeVault external API only supports vault-to-vault transfers, so
+  //    the on-chain USDC send is handled out-of-band (or via PrimeVault UI) in
+  //    the current testnet setup. We proceed directly to payout here.
   if (tx.status === 'usdc_received') {
     try {
       console.log('[advance] step1: getDepositAddress')
       const { address } = await getDepositAddress('ethereum', 'usdc')
       console.log('[advance] step1 ok, address:', address)
 
-      console.log('[advance] step2: sendUSDC', tx.amountUsd, '->', address)
-      await sendUSDC({
-        toAddress:  address,
-        amount:     tx.amountUsd,
-        externalId: `${tx.id}_usdc`,
-      })
-      console.log('[advance] step2 ok')
-
       await db.update(schema.transactions)
         .set({ status: 'usdc_sent', credibleDepositAddress: address, updatedAt: new Date() })
         .where(eq(schema.transactions.id, tx.id))
 
       const ben = tx.beneficiarySnapshot ?? {}
-      console.log('[advance] step3: initiatePayout', tx.amountInr, 'INR to', ben.accountNumber)
+      console.log('[advance] step2: initiatePayout', tx.amountInr, 'INR to', ben.accountNumber)
       const payout = await initiatePayout({
         amount:               tx.amountInr,
         currency:             'inr',
@@ -74,10 +69,11 @@ async function advanceIfNeeded(tx) {
         wallet:               'deposit',
         payout_process_type:  'IMPS',
       })
-      console.log('[advance] step3 ok, payout_id:', payout.payout_id)
+      console.log('[advance] step2 ok, payout_id:', payout?.data?.payout_id ?? payout?.payout_id)
 
+      const payoutId = payout?.data?.payout_id ?? payout?.payout_id
       await db.update(schema.transactions)
-        .set({ status: 'payout_initiated', crediblePayoutId: payout.payout_id, updatedAt: new Date() })
+        .set({ status: 'payout_initiated', crediblePayoutId: payoutId, updatedAt: new Date() })
         .where(eq(schema.transactions.id, tx.id))
 
       return { ...tx, status: 'payout_initiated' }

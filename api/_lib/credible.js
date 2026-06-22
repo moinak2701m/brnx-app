@@ -21,7 +21,11 @@ export async function getFxRate(inputCurrency = 'usdc', outputCurrency = 'inr') 
 }
 
 export async function getDepositAddress(blockchain = 'ethereum', currency = 'usdc') {
-  return credibleFetch(`/getDepositAddress?blockchain=${blockchain}&currency=${currency}`)
+  const res = await credibleFetch(`/getDepositAddress?blockchain=${blockchain}&currency=${currency}`)
+  // API wraps in { data: [{ address, blockchain, chain, currency }] }
+  const address = res?.data?.[0]?.address ?? res?.address
+  if (!address) throw new Error('No deposit address returned from Credible')
+  return { address, raw: res }
 }
 
 export async function initiatePayout(payload) {
