@@ -141,7 +141,7 @@ export default async function handler(req, res) {
 
     if (!tx) return res.status(404).json({ error: 'Transaction not found' })
 
-    const advanced = ['payout_initiated', 'completed', 'failed'].includes(tx.status)
+    const advanced = ['completed', 'failed'].includes(tx.status)
       ? tx
       : await advanceIfNeeded(tx)
 
