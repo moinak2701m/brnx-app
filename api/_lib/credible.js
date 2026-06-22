@@ -28,6 +28,15 @@ export async function getDepositAddress(blockchain = 'ethereum', currency = 'usd
   return { address, raw: res }
 }
 
+export async function validateBankAccount({ currency = 'inr', account_number, ifsc, account_holder_name }) {
+  const idempotencyKey = `val-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  return credibleFetch('/validateBankAccount', {
+    method:  'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body:    JSON.stringify({ currency, account_number, ifsc, account_holder_name }),
+  })
+}
+
 export async function initiatePayout(payload) {
   return credibleFetch('/initiatePayout', {
     method: 'POST',

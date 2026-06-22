@@ -41,21 +41,57 @@ export default function AddBeneficiary() {
     bank: '', accountNumber: '', ifsc: '',
   })
   const [loading, setLoading] = useState(false)
+  const [verification, setVerification] = useState(null) // { status, nameFromBank, ref } | { error }
+  const [verifying, setVerifying] = useState(false)
 
-  const setField = (k) => (v) => setForm((f) => ({ ...f, [k]: v }))
-  const setInput = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const setField = (k) => (v) => {
+    setForm((f) => ({ ...f, [k]: v }))
+    setVerification(null)
+  }
+  const setInput = (k) => (e) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }))
+    setVerification(null)
+  }
 
   const bankValid = form.bank && form.accountNumber && form.ifsc
+  const holderName = purpose === 'family' ? form.name
+    : purpose === 'loan' ? (form.lender === 'Other' ? 'Repayment Account' : form.lender)
+    : (user?.name || 'My Account')
+
+  const canVerify = bankValid && !!holderName && !verifying
+  const verified  = verification?.status === 'SUCCESS' || verification?.status === 'success'
 
   let canSave = false
-  if (purpose === 'family') canSave = form.name && form.relation && bankValid
-  if (purpose === 'loan')   canSave = form.lender && bankValid
-  if (purpose === 'self')   canSave = bankValid
+  if (purpose === 'family') canSave = form.name && form.relation && verified
+  if (purpose === 'loan')   canSave = form.lender && verified
+  if (purpose === 'self')   canSave = verified
+
+  const handleVerify = async () => {
+    setVerifying(true)
+    setVerification(null)
+    try {
+      const res = await fetch('/api/transfers/validate-bank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          account_number:       form.accountNumber,
+          ifsc:                 form.ifsc.toUpperCase(),
+          account_holder_name:  holderName,
+          currency:             'inr',
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+      setVerification({ status: data.status, nameFromBank: data.account_holder_name_from_bank, ref: data.transaction_reference_no })
+    } catch (err) {
+      setVerification({ error: err.message })
+    } finally {
+      setVerifying(false)
+    }
+  }
 
   const handleSave = async () => {
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 700))
-
     let beneficiary = {}
     if (purpose === 'family') {
       beneficiary = {
@@ -79,7 +115,6 @@ export default function AddBeneficiary() {
         bankAccount: { bank: form.bank, accountMasked: '****' + form.accountNumber.slice(-4), ifsc: form.ifsc },
       }
     }
-
     addBeneficiary(beneficiary)
     setLoading(false)
     navigate('/send')
@@ -118,6 +153,38 @@ export default function AddBeneficiary() {
         <Input label="Bank name" value={form.bank} onChange={setInput('bank')} placeholder="e.g. HSBC India, SBI" />
         <Input label="Account number" value={form.accountNumber} onChange={setInput('accountNumber')} />
         <Input label="IFSC code" value={form.ifsc} onChange={setInput('ifsc')} placeholder="e.g. SBIN0001234" />
+
+        {/* Verify account */}
+        {bankValid && (
+          <div className="flex flex-col gap-2">
+            <Button
+              variant={verified ? 'ghost' : 'secondary'}
+              fullWidth
+              onClick={handleVerify}
+              loading={verifying}
+              disabled={!canVerify || verified}
+            >
+              {verified ? '✓ Account Verified' : 'Verify Bank Account'}
+            </Button>
+
+            {verified && verification.nameFromBank && (
+              <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-2xl px-4 py-3">
+                <p className="text-xs text-[#16a34a] font-semibold mb-0.5">Name on bank account</p>
+                <p className="text-[15px] font-bold text-[#111827]">{verification.nameFromBank}</p>
+                {verification.ref && (
+                  <p className="text-[11px] text-[#9ca3af] mt-1">Ref: {verification.ref}</p>
+                )}
+              </div>
+            )}
+
+            {verification?.error && (
+              <div className="bg-[#fef2f2] border border-[#fecaca] rounded-2xl px-4 py-3">
+                <p className="text-xs text-[#dc2626] font-semibold mb-0.5">Verification failed</p>
+                <p className="text-[13px] text-[#dc2626]">{verification.error}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="pt-2">
           <Button variant="primary" fullWidth onClick={handleSave} loading={loading} disabled={!canSave}>
