@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { getTransaction, sendUSDC } from '../_lib/primevault.js'
-import { getDepositAddress, initiatePayout } from '../_lib/credible.js'
+import { getDepositAddress, initiatePayout, getPayoutInfo } from '../_lib/credible.js'
 import { getDb, schema } from '../_lib/db.js'
 
 export const STATUS_STAGE = {
@@ -87,6 +87,28 @@ async function advanceIfNeeded(tx) {
     }
   }
 
+  // 3. Poll Credible payout status → mark completed or failed
+  if (tx.status === 'payout_initiated' && tx.crediblePayoutId) {
+    try {
+      const info = await getPayoutInfo(tx.crediblePayoutId)
+      const payoutStatus = info?.data?.status ?? info?.status
+      console.log('[advance] credible payout status:', payoutStatus, 'ref:', info?.data?.transaction_reference_no)
+      if (payoutStatus === 'completed') {
+        await db.update(schema.transactions)
+          .set({ status: 'completed', updatedAt: new Date() })
+          .where(eq(schema.transactions.id, tx.id))
+        return { ...tx, status: 'completed' }
+      } else if (payoutStatus === 'failed') {
+        await db.update(schema.transactions)
+          .set({ status: 'failed', failureReason: 'Credible payout failed', updatedAt: new Date() })
+          .where(eq(schema.transactions.id, tx.id))
+        return { ...tx, status: 'failed' }
+      }
+    } catch (err) {
+      console.error('[advance] getPayoutInfo failed:', err.message)
+    }
+  }
+
   return tx
 }
 
@@ -103,7 +125,17 @@ export default async function handler(req, res) {
 
   try {
     const db = getDb()
-    const [tx] = await db.select().from(schema.transactions)
+    const [tx] = await db.select({
+      id:                  schema.transactions.id,
+      status:              schema.transactions.status,
+      pvTransactionId:     schema.transactions.pvTransactionId,
+      amountUsd:           schema.transactions.amountUsd,
+      amountInr:           schema.transactions.amountInr,
+      beneficiarySnapshot: schema.transactions.beneficiarySnapshot,
+      crediblePayoutId:    schema.transactions.crediblePayoutId,
+      failureReason:       schema.transactions.failureReason,
+      lastError:           schema.transactions.lastError,
+    }).from(schema.transactions)
       .where(eq(schema.transactions.id, id))
       .limit(1)
 
