@@ -40,7 +40,7 @@ export default function PayReview() {
         <FeeBreakdown quote={quote} />
         <div className="bg-[#fef3c7] rounded-2xl p-3">
           <p className="text-xs text-[#92400e]">
-            By confirming, you authorize Borderless to debit {formatSource(quote.total, quote.currency)} from your {paymentSource?.bankName} account and credit {formatINR(quote.amountINR)} to {loan.repaymentAccount.bank}. This action cannot be undone.
+            By confirming, you authorize Dragonfly to debit {formatSource(quote.total, quote.currency)} from your {paymentSource?.bankName} account and credit {formatINR(quote.amountINR)} to {loan.repaymentAccount.bank}. This action cannot be undone.
           </p>
         </div>
         <Button variant="primary" fullWidth onClick={() => navigate(`/loans/${loanId}/pay/processing`)}>

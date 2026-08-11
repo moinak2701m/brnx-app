@@ -35,7 +35,7 @@ export default function SignUp() {
     <div className="flex flex-col min-h-full bg-white">
       <div className="flex flex-col px-6 pt-12 pb-8 gap-6">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <img src="/assets/borderless-logo.svg" alt="Borderless" className="w-36 mb-6" />
+          <img src="/assets/dragonfly-logo.svg" alt="Dragonfly" className="w-36 mb-6" />
           <h1 className="text-2xl font-bold text-[#111827]">Create account</h1>
           <p className="text-[#6b7280] mt-1">Join thousands of students sending money home</p>
         </motion.div>

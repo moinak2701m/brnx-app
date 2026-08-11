@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
-const STORAGE_KEY = 'brnx-view-override'
-const CHANGE_EVENT = 'brnx-view-change'
+const STORAGE_KEY = 'dragonfly-view-override'
+const CHANGE_EVENT = 'dragonfly-view-change'
 
 function readState() {
   const override = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null

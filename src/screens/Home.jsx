@@ -182,7 +182,7 @@ function DesktopHome({ user, beneficiaries, transactions, paymentSource, navigat
 
         {/* Savings vs banks */}
         <p className="text-[13px] text-[#64748b] mb-8">
-          Banks offer ₹{bankRate} — BRNX saves you{' '}
+          Banks offer ₹{bankRate} — Dragonfly saves you{' '}
           <span className="text-emerald-600 font-semibold">₹{savingPerDollar} per dollar</span>
         </p>
 

@@ -51,7 +51,7 @@ export default function AdminDashboard() {
     <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif' }}>
       {/* Top nav */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: '#1a56db', padding: '0 32px', display: 'flex', alignItems: 'center', gap: 32, height: 56 }}>
-        <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>BRNX Admin · PrimeVault</span>
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Dragonfly Admin · PrimeVault</span>
         <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
           {[['vaults', 'Vaults'], ['txns', 'Transactions'], ['send', 'Send']].map(([v, label]) => (
             <button key={v} onClick={() => setView(v)} style={{
@@ -681,7 +681,7 @@ function CreateVaultModal({ onClose, onCreated }) {
 
             <form onSubmit={submit}>
               <Field label="Vault Name">
-                <NativeInput type="text" value={name} onChange={setName} placeholder="e.g. Borderless Treasury" />
+                <NativeInput type="text" value={name} onChange={setName} placeholder="e.g. Dragonfly Treasury" />
               </Field>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 12px' }}>

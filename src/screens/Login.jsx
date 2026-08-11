@@ -40,7 +40,7 @@ export default function Login() {
           className="flex flex-col gap-5"
         >
           <div>
-            <img src="/assets/borderless-logo.svg" alt="Borderless" className="w-36 mb-6" />
+            <img src="/assets/dragonfly-logo.svg" alt="Dragonfly" className="w-36 mb-6" />
             <h1 className="text-2xl font-bold text-[#111827]">Welcome back</h1>
             <p className="text-[#6b7280] mt-1">Sign in to your account</p>
           </div>

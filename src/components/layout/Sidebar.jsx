@@ -23,15 +23,7 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-5 pt-6 pb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-black text-[11px] tracking-tight">BX</span>
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-white text-[16px] font-bold tracking-tight">BRNX</span>
-            <span className="text-white/40 text-[10px] font-medium">by Borderless</span>
-          </div>
-        </div>
+        <img src="/assets/dragonfly-logo.svg" alt="Dragonfly" className="h-8 w-auto" />
       </div>
 
       {/* Nav */}

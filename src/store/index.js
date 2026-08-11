@@ -54,7 +54,7 @@ const useStore = create(
       markNotificationsRead: () => set({ notificationsUnread: 0 }),
     }),
     {
-      name: 'brnx-store-v4',
+      name: 'dragonfly-store-v4',
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         kycStatus: state.kycStatus,
