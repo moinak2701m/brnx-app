@@ -29,7 +29,7 @@ export default function Splash() {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className="flex flex-col items-center gap-4"
       >
-        <img src="/assets/dragonfly-logo.svg" alt="Dragonfly" className="w-44" />
+        <img src="/assets/dragonfly-logo.svg" alt="Dragonfly" className="w-44 brightness-0 invert" />
         <p className="text-white/70 text-sm font-medium tracking-wide">Transfer money to India, instantly.</p>
       </motion.div>
       <motion.div

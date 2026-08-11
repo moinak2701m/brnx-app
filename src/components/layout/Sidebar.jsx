@@ -23,7 +23,7 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-5 pt-6 pb-5">
-        <img src="/assets/dragonfly-logo.svg" alt="Dragonfly" className="h-8 w-auto" />
+        <img src="/assets/dragonfly-logo.svg" alt="Dragonfly" className="h-8 w-auto brightness-0 invert" />
       </div>
 
       {/* Nav */}
