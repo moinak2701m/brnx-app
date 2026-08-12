@@ -226,7 +226,7 @@ const useAfricaStore = create(
         }))
       },
     }),
-    { name: 'dragonfly-africa-store-v1' }
+    { name: 'dragonfly-africa-store-v2' }
   )
 )
 

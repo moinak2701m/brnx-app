@@ -158,9 +158,11 @@ export default function Treasury() {
             {topUps.map((t) => (
               <div key={t.id} className="flex items-center justify-between p-4 text-sm">
                 <span className="text-[#6b7280]">
-                  {new Date(t.timestamps.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {t.timestamps?.created
+                    ? new Date(t.timestamps.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : '—'}
                 </span>
-                <span className="font-mono text-[#111827]">{formatNGN(t.quote.amountNGN)}</span>
+                <span className="font-mono text-[#111827]">{t.quote?.amountNGN ? formatNGN(t.quote.amountNGN) : '—'}</span>
                 <span className="font-mono font-semibold text-[#16a34a]">+{formatUSD(t.amountUSD)}</span>
                 <Badge status={t.status} />
               </div>
