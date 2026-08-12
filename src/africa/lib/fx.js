@@ -7,24 +7,16 @@ export function getNgnRate() {
   return +(BASE_NGN_USD * (1 + bps / 10000)).toFixed(2)
 }
 
-export function getInvoiceQuote(amountUSD) {
+// Quote for paying a fixed USD amount in NGN - used both for invoice
+// bank-transfer payments and treasury top-ups (you always specify how
+// much USD you want to land, and this tells you how much NGN to send).
+export function getUsdToNgnQuote(amountUSD) {
   const rate = getNgnRate()
   const amountNGN = Math.round(amountUSD * rate)
   return {
     rate,
     amountUSD,
     amountNGN,
-    expiresAt: Date.now() + 120_000,
-  }
-}
-
-export function getTopUpQuote(amountNGN) {
-  const rate = getNgnRate()
-  const amountUSD = +(amountNGN / rate).toFixed(2)
-  return {
-    rate,
-    amountNGN,
-    amountUSD,
     expiresAt: Date.now() + 120_000,
   }
 }

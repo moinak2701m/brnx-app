@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Wallet, Copy, CheckCircle2 } from 'lucide-react'
+import { Wallet, Copy } from 'lucide-react'
 import Input from '../../../components/ui/Input'
 import Button from '../../../components/ui/Button'
 import CountdownTimer from '../../../components/ui/CountdownTimer'
+import Badge from '../../../components/ui/Badge'
+import PipelineSteps, { TOPUP_STEPS } from '../../components/PipelineSteps'
 import useAfricaStore from '../../store'
 import { formatUSD, formatNGN } from '../../lib/fx'
 import { ONRAMP_PARTNER_BANK } from '../../lib/mock'
@@ -10,37 +12,40 @@ import { ONRAMP_PARTNER_BANK } from '../../lib/mock'
 export default function Treasury() {
   const walletBalance = useAfricaStore((s) => s.senderWallet.balanceUSD)
   const topUps = useAfricaStore((s) => s.treasuryTopUps)
-  const getTreasuryQuote = useAfricaStore((s) => s.getTreasuryQuote)
-  const confirmTreasuryTopUp = useAfricaStore((s) => s.confirmTreasuryTopUp)
+  const initiateTreasuryTopUp = useAfricaStore((s) => s.initiateTreasuryTopUp)
+  const confirmTreasuryTransferSent = useAfricaStore((s) => s.confirmTreasuryTransferSent)
 
-  const [step, setStep] = useState('form') // form | quote | done
-  const [amountNGN, setAmountNGN] = useState('')
-  const [quote, setQuote] = useState(null)
+  const [step, setStep] = useState('form') // form | bank-details | status
+  const [amountUSD, setAmountUSD] = useState('')
+  const [topUp, setTopUp] = useState(null)
   const [expired, setExpired] = useState(false)
 
-  const parsedAmount = parseFloat(amountNGN) || 0
+  // Keep the in-flight top-up's status live as the store updates it.
+  const liveTopUp = useAfricaStore((s) => s.treasuryTopUps.find((t) => t.id === topUp?.id)) || topUp
+
+  const parsedAmount = parseFloat(amountUSD) || 0
 
   const getQuote = () => {
     if (parsedAmount <= 0) return
-    setQuote(getTreasuryQuote(parsedAmount))
+    setTopUp(initiateTreasuryTopUp(parsedAmount))
     setExpired(false)
-    setStep('quote')
+    setStep('bank-details')
   }
 
   const refreshQuote = () => {
-    setQuote(getTreasuryQuote(parsedAmount))
+    setTopUp(initiateTreasuryTopUp(parsedAmount))
     setExpired(false)
   }
 
-  const confirmTopUp = () => {
-    confirmTreasuryTopUp(quote)
-    setStep('done')
+  const confirmTransferSent = () => {
+    confirmTreasuryTransferSent(topUp.id)
+    setStep('status')
   }
 
   const startOver = () => {
     setStep('form')
-    setAmountNGN('')
-    setQuote(null)
+    setAmountUSD('')
+    setTopUp(null)
   }
 
   return (
@@ -62,11 +67,11 @@ export default function Treasury() {
           <div className="flex flex-col gap-4">
             <p className="text-sm font-semibold text-[#111827]">Top up wallet</p>
             <Input
-              label="Amount (NGN)"
+              label="Amount (USD)"
               type="number"
-              placeholder="e.g. 500000"
-              value={amountNGN}
-              onChange={(e) => setAmountNGN(e.target.value)}
+              placeholder="e.g. 300"
+              value={amountUSD}
+              onChange={(e) => setAmountUSD(e.target.value)}
             />
             <Button variant="primary" disabled={parsedAmount <= 0} onClick={getQuote}>
               Get quote
@@ -74,36 +79,38 @@ export default function Treasury() {
           </div>
         )}
 
-        {step === 'quote' && quote && (
+        {step === 'bank-details' && topUp && (
           <div className="flex flex-col gap-5">
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Live quote</span>
                 {!expired ? (
-                  <CountdownTimer expiresAt={quote.expiresAt} onExpire={() => setExpired(true)} />
+                  <CountdownTimer expiresAt={topUp.quote.expiresAt} onExpire={() => setExpired(true)} />
                 ) : (
                   <span className="text-sm font-semibold text-[#dc2626]">Rate expired</span>
                 )}
               </div>
+              <div className="flex justify-between text-sm py-1 font-semibold">
+                <span className="text-[#111827]">Wallet credit</span>
+                <span className="font-mono text-[#16a34a]">{formatUSD(topUp.amountUSD)}</span>
+              </div>
               <div className="flex justify-between text-sm py-1">
                 <span className="text-[#6b7280]">You send</span>
-                <span className="font-mono font-semibold text-[#111827]">{formatNGN(quote.amountNGN)}</span>
+                <span className="font-mono font-semibold text-[#111827]">{formatNGN(topUp.quote.amountNGN)}</span>
               </div>
               <div className="flex justify-between text-sm py-1">
                 <span className="text-[#6b7280]">Rate</span>
-                <span className="font-mono text-[#111827]">1 USD = {quote.rate} NGN</span>
-              </div>
-              <div className="flex justify-between text-sm py-1 font-semibold">
-                <span className="text-[#111827]">Wallet credit</span>
-                <span className="font-mono text-[#16a34a]">{formatUSD(quote.amountUSD)}</span>
+                <span className="font-mono text-[#111827]">1 USD = {topUp.quote.rate} NGN</span>
               </div>
             </div>
 
             <div className="border-t border-[#f3f4f6] pt-4 flex flex-col gap-3">
+              <p className="text-sm font-semibold text-[#111827]">Transfer {formatNGN(topUp.quote.amountNGN)} to:</p>
               {[
                 ['Bank', ONRAMP_PARTNER_BANK.bankName],
                 ['Account name', ONRAMP_PARTNER_BANK.accountName],
                 ['Account number', ONRAMP_PARTNER_BANK.accountNumber],
+                ['Reference', `DGF-${topUp.id.slice(-6)}`],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-sm text-[#6b7280]">{label}</span>
@@ -120,19 +127,24 @@ export default function Treasury() {
                 Refresh quote
               </Button>
             ) : (
-              <Button variant="primary" fullWidth onClick={confirmTopUp}>
+              <Button variant="primary" fullWidth onClick={confirmTransferSent}>
                 I've sent the transfer
               </Button>
             )}
           </div>
         )}
 
-        {step === 'done' && (
-          <div className="flex flex-col items-center text-center gap-3 py-4">
-            <CheckCircle2 size={32} className="text-[#16a34a]" />
-            <p className="text-sm font-semibold text-[#111827]">Top-up submitted</p>
-            <p className="text-xs text-[#9ca3af]">Your wallet will be credited in a few seconds.</p>
-            <Button variant="ghost" onClick={startOver}>
+        {step === 'status' && liveTopUp && (
+          <div>
+            <div className="mb-6 mt-2 overflow-x-auto">
+              <PipelineSteps status={liveTopUp.status} timestamps={liveTopUp.timestamps} steps={TOPUP_STEPS} />
+            </div>
+            <p className="text-sm text-[#6b7280] mb-4">
+              {liveTopUp.status === 'received_in_wallet'
+                ? `${formatUSD(liveTopUp.amountUSD)} is now available in your wallet.`
+                : "We're waiting to receive your bank transfer."}
+            </p>
+            <Button variant="ghost" fullWidth onClick={startOver}>
               Top up again
             </Button>
           </div>
@@ -145,9 +157,12 @@ export default function Treasury() {
           <div className="bg-white border border-[#e5e7eb] rounded-2xl divide-y divide-[#f3f4f6]">
             {topUps.map((t) => (
               <div key={t.id} className="flex items-center justify-between p-4 text-sm">
-                <span className="text-[#6b7280]">{new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                <span className="font-mono text-[#111827]">{formatNGN(t.amountNGN)}</span>
+                <span className="text-[#6b7280]">
+                  {new Date(t.timestamps.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+                <span className="font-mono text-[#111827]">{formatNGN(t.quote.amountNGN)}</span>
                 <span className="font-mono font-semibold text-[#16a34a]">+{formatUSD(t.amountUSD)}</span>
+                <Badge status={t.status} />
               </div>
             ))}
           </div>

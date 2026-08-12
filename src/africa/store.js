@@ -9,7 +9,7 @@ import {
   MOCK_TREASURY_TOPUPS,
   MOCK_SENDER_WALLET_BALANCE,
 } from './lib/mock'
-import { getInvoiceQuote, getTopUpQuote } from './lib/fx'
+import { getUsdToNgnQuote } from './lib/fx'
 
 const useAfricaStore = create(
   persist(
@@ -67,7 +67,7 @@ const useAfricaStore = create(
       generateInvoiceQuote: (invoiceId) => {
         const invoice = get().invoices.find((i) => i.id === invoiceId)
         if (!invoice) return null
-        const quote = getInvoiceQuote(invoice.amountUSD)
+        const quote = getUsdToNgnQuote(invoice.amountUSD)
         set((state) => ({
           invoices: state.invoices.map((i) =>
             i.id === invoiceId ? { ...i, quote } : i
@@ -151,23 +151,49 @@ const useAfricaStore = create(
       senderWallet: { balanceUSD: MOCK_SENDER_WALLET_BALANCE },
       treasuryTopUps: MOCK_TREASURY_TOPUPS,
 
-      getTreasuryQuote: (amountNGN) => getTopUpQuote(amountNGN),
-
-      confirmTreasuryTopUp: (quote) => {
+      // Treasury top-ups are USD-denominated (you say how much USD you
+      // want in the wallet) and go through the same created ->
+      // payment_initiated -> received_in_wallet states as invoices -
+      // there's just no further "received_in_bank" leg, since landing
+      // in the wallet is the whole point of a top-up.
+      initiateTreasuryTopUp: (amountUSD) => {
+        const quote = getUsdToNgnQuote(amountUSD)
         const topUp = {
           id: `topup_${Date.now()}`,
-          amountNGN: quote.amountNGN,
-          amountUSD: quote.amountUSD,
-          rate: quote.rate,
-          createdAt: new Date().toISOString(),
+          amountUSD,
+          quote,
+          status: 'created',
+          timestamps: {
+            created: new Date().toISOString(),
+            payment_initiated: null,
+            received_in_wallet: null,
+          },
         }
         set((state) => ({ treasuryTopUps: [topUp, ...state.treasuryTopUps] }))
-        setTimeout(() => {
-          set((state) => ({
-            senderWallet: { balanceUSD: state.senderWallet.balanceUSD + quote.amountUSD },
-          }))
-        }, 3000)
         return topUp
+      },
+
+      confirmTreasuryTransferSent: (topUpId) => {
+        const now = new Date().toISOString()
+        set((state) => ({
+          treasuryTopUps: state.treasuryTopUps.map((t) =>
+            t.id === topUpId
+              ? { ...t, status: 'payment_initiated', timestamps: { ...t.timestamps, payment_initiated: now } }
+              : t
+          ),
+        }))
+        setTimeout(() => {
+          const topUp = get().treasuryTopUps.find((t) => t.id === topUpId)
+          if (!topUp) return
+          set((state) => ({
+            treasuryTopUps: state.treasuryTopUps.map((t) =>
+              t.id === topUpId
+                ? { ...t, status: 'received_in_wallet', timestamps: { ...t.timestamps, received_in_wallet: new Date().toISOString() } }
+                : t
+            ),
+            senderWallet: { balanceUSD: state.senderWallet.balanceUSD + topUp.amountUSD },
+          }))
+        }, 4500)
       },
 
       // Receiver's wallet balance is derived (sum of invoices sitting in

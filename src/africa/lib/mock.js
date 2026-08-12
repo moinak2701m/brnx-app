@@ -114,10 +114,14 @@ export const MOCK_INVOICES = [
 export const MOCK_TREASURY_TOPUPS = [
   {
     id: 'topup_1',
-    amountNGN: 348250,
     amountUSD: 250,
-    rate: 1393.0,
-    createdAt: '2026-07-15T12:00:00Z',
+    status: 'received_in_wallet',
+    quote: { rate: 1393.0, amountUSD: 250, amountNGN: 348250 },
+    timestamps: {
+      created: '2026-07-15T11:52:00Z',
+      payment_initiated: '2026-07-15T11:58:00Z',
+      received_in_wallet: '2026-07-15T12:03:00Z',
+    },
   },
 ]
 

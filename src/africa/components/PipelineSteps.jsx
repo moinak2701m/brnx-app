@@ -1,11 +1,19 @@
 import { Fragment } from 'react'
 import { Check } from 'lucide-react'
 
-const STEPS = [
+const INVOICE_STEPS = [
   { key: 'created', label: 'Created' },
   { key: 'payment_initiated', label: 'Payment Initiated' },
   { key: 'received_in_wallet', label: 'Received in Wallet' },
   { key: 'received_in_bank', label: 'Received in Bank' },
+]
+
+// Treasury top-ups stop at the wallet - there's no further bank leg,
+// landing in the wallet is the point of a top-up.
+export const TOPUP_STEPS = [
+  { key: 'created', label: 'Created' },
+  { key: 'payment_initiated', label: 'Payment Initiated' },
+  { key: 'received_in_wallet', label: 'Received in Wallet' },
 ]
 
 const formatWhen = (iso) => {
@@ -18,12 +26,12 @@ const formatWhen = (iso) => {
   })
 }
 
-export default function PipelineSteps({ status, timestamps = {} }) {
-  const currentIndex = STEPS.findIndex((s) => s.key === status)
+export default function PipelineSteps({ status, timestamps = {}, steps = INVOICE_STEPS }) {
+  const currentIndex = steps.findIndex((s) => s.key === status)
 
   return (
     <div className="flex w-full items-start">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const done = i < currentIndex
         const active = i === currentIndex
         const upcoming = i > currentIndex
