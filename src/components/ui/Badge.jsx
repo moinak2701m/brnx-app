@@ -5,6 +5,10 @@ const STYLES = {
   failed:     { label: 'FAILED',         color: '#dc2626', bg: '#fef2f2' },
   verified:   { label: 'VERIFIED',       color: '#16a34a', bg: '#d1fae5' },
   review:     { label: 'UNDER REVIEW',   color: '#f97316', bg: '#fff7ed' },
+  created:            { label: 'CREATED',           color: '#6b7280', bg: '#f3f4f6' },
+  payment_initiated:  { label: 'PAYMENT INITIATED', color: '#7c3aed', bg: '#ede9fe' },
+  received_in_wallet: { label: 'IN WALLET',         color: '#2563eb', bg: '#dbeafe' },
+  received_in_bank:   { label: 'SETTLED',           color: '#16a34a', bg: '#d1fae5' },
 }
 
 export default function Badge({ status, label, size = 'sm' }) {

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { User, CreditCard, LogOut, ChevronRight, ShieldCheck, Bell } from 'lucide-react'
+import { User, CreditCard, LogOut, ChevronRight, ShieldCheck, Bell, LayoutGrid } from 'lucide-react'
 import { useStore } from '../store'
 
 const MenuItem = ({ icon: Icon, label, sub, onClick, danger }) => (
@@ -56,6 +56,7 @@ export default function Profile() {
           onClick={() => navigate('/profile/payment-source')}
         />
         <MenuItem icon={Bell} label="Notifications" sub="All alerts enabled" onClick={() => {}} />
+        <MenuItem icon={LayoutGrid} label="Switch Demo" sub="Pick a different case to run" onClick={() => navigate('/')} />
         <div className="my-1 border-t border-[#f3f4f6]" />
         <MenuItem icon={LogOut} label="Sign Out" onClick={handleLogout} danger />
       </div>

@@ -1,5 +1,8 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import AuthenticatedLayout from './components/layout/AuthenticatedLayout'
+
+// Case picker
+import CaseSelect from './screens/CaseSelect'
 
 // Onboarding
 import Splash from './screens/Splash'
@@ -25,7 +28,7 @@ import AdminDashboard from './pages/AdminDashboard'
 
 export const router = createBrowserRouter([
   { path: '/admin', element: <AdminDashboard /> },
-  { path: '/', element: <Navigate to="/splash" replace /> },
+  { path: '/', element: <CaseSelect /> },
   { path: '/splash', element: <Splash /> },
   { path: '/login', element: <Login /> },
   { path: '/signup', element: <SignUp /> },
