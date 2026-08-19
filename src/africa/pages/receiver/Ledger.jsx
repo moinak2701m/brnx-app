@@ -1,4 +1,8 @@
+import { useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import Badge from '../../../components/ui/Badge'
+import SlideOver from '../../components/SlideOver'
+import TransactionDetailPanel from '../../components/TransactionDetailPanel'
 import useAfricaStore from '../../store'
 import { formatUSD } from '../../lib/fx'
 
@@ -15,6 +19,7 @@ const formatWhen = (iso) => {
 export default function Ledger() {
   const invoices = useAfricaStore((s) => s.invoices)
   const senders = useAfricaStore((s) => s.senders)
+  const [selectedId, setSelectedId] = useState(null)
 
   const senderName = (id) => senders.find((s) => s.id === id)?.name || id
 
@@ -25,6 +30,8 @@ export default function Ledger() {
   const settlements = invoices
     .filter((i) => i.paymentMethod)
     .sort((a, b) => new Date(b.timestamps.payment_initiated) - new Date(a.timestamps.payment_initiated))
+
+  const selected = settlements.find((i) => i.id === selectedId)
 
   return (
     <div>
@@ -45,11 +52,16 @@ export default function Ledger() {
                 <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Amount</th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Settled to bank</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {settlements.map((inv) => (
-                <tr key={inv.id} className="border-t border-[#f3f4f6] hover:bg-[#f9fafb] transition-colors">
+                <tr
+                  key={inv.id}
+                  onClick={() => setSelectedId(inv.id)}
+                  className="border-t border-[#f3f4f6] hover:bg-[#f9fafb] transition-colors cursor-pointer"
+                >
                   <td className="px-4 py-3 font-medium text-[#111827]">{inv.invoiceNumber}</td>
                   <td className="px-4 py-3 text-[#6b7280]">{senderName(inv.senderId)}</td>
                   <td className="px-4 py-3 font-mono text-[#111827]">{formatUSD(inv.amountUSD)}</td>
@@ -57,12 +69,24 @@ export default function Ledger() {
                     <Badge status={inv.status} />
                   </td>
                   <td className="px-4 py-3 text-[#6b7280]">{formatWhen(inv.timestamps.received_in_bank)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <ChevronRight size={16} className="text-[#9ca3af]" />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <SlideOver
+        open={!!selected}
+        onClose={() => setSelectedId(null)}
+        title="Transaction detail"
+        subtitle={selected?.invoiceNumber}
+      >
+        <TransactionDetailPanel invoice={selected} senderName={selected ? senderName(selected.senderId) : ''} />
+      </SlideOver>
     </div>
   )
 }
