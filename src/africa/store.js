@@ -11,6 +11,83 @@ import {
 } from './lib/mock'
 import { getUsdToNgnQuote } from './lib/fx'
 
+const STAGE_MS = 5 * 60 * 1000 // 5 minutes between each mid-flight stage
+const INVOICE_STAGES = ['created', 'payment_initiated', 'received_in_wallet', 'received_in_bank']
+const TOPUP_STAGES = ['created', 'payment_initiated', 'received_in_wallet']
+
+function nextStage(stages, status) {
+  const idx = stages.indexOf(status)
+  if (idx === -1 || idx >= stages.length - 1) return null
+  return stages[idx + 1]
+}
+
+// Any invoice/top-up sitting mid-flight keeps advancing toward its final
+// stage on its own, 5 minutes per stage - computed from the timestamp it
+// entered the current stage, not a fresh timer, so this is correct even
+// across a page reload (which would otherwise silently drop a pending
+// setTimeout and leave the record stuck forever). This is the fallback
+// path for anything NOT actively mid-flight in a fast interactive timer
+// (confirmBankTransfer/payFromWallet/confirmTreasuryTransferSent) - e.g.
+// seed data that starts pre-populated mid-pipeline, or a real payment
+// whose fast timer got interrupted by a refresh. Re-reading fresh state
+// each time it fires means it's a safe no-op once the real stage has
+// already been reached some other way.
+function scheduleInvoiceCatchUp(invoiceId) {
+  const invoice = useAfricaStore.getState().invoices.find((i) => i.id === invoiceId)
+  if (!invoice) return
+  const next = nextStage(INVOICE_STAGES, invoice.status)
+  if (!next) return
+
+  const enteredAt = invoice.timestamps?.[invoice.status]
+  const remaining = STAGE_MS - (enteredAt ? Date.now() - new Date(enteredAt).getTime() : 0)
+
+  if (remaining <= 0) {
+    const now = new Date().toISOString()
+    useAfricaStore.setState((state) => ({
+      invoices: state.invoices.map((i) =>
+        i.id === invoiceId ? { ...i, status: next, timestamps: { ...i.timestamps, [next]: now } } : i
+      ),
+    }))
+    scheduleInvoiceCatchUp(invoiceId) // in case more than one stage is overdue
+  } else {
+    setTimeout(() => scheduleInvoiceCatchUp(invoiceId), remaining)
+  }
+}
+
+function scheduleTopUpCatchUp(topUpId) {
+  const topUp = useAfricaStore.getState().treasuryTopUps.find((t) => t.id === topUpId)
+  if (!topUp) return
+  const next = nextStage(TOPUP_STAGES, topUp.status)
+  if (!next) return
+
+  const enteredAt = topUp.timestamps?.[topUp.status]
+  const remaining = STAGE_MS - (enteredAt ? Date.now() - new Date(enteredAt).getTime() : 0)
+
+  if (remaining <= 0) {
+    const now = new Date().toISOString()
+    useAfricaStore.setState((state) => ({
+      treasuryTopUps: state.treasuryTopUps.map((t) =>
+        t.id === topUpId ? { ...t, status: next, timestamps: { ...t.timestamps, [next]: now } } : t
+      ),
+      ...(next === 'received_in_wallet'
+        ? { senderWallet: { balanceUSD: useAfricaStore.getState().senderWallet.balanceUSD + topUp.amountUSD } }
+        : {}),
+    }))
+    scheduleTopUpCatchUp(topUpId)
+  } else {
+    setTimeout(() => scheduleTopUpCatchUp(topUpId), remaining)
+  }
+}
+
+function resumeInFlight() {
+  useAfricaStore.getState().invoices
+    .filter((i) => i.status === 'payment_initiated' || i.status === 'received_in_wallet')
+    .forEach((i) => scheduleInvoiceCatchUp(i.id))
+  useAfricaStore.getState().treasuryTopUps
+    .filter((t) => t.status === 'payment_initiated')
+    .forEach((t) => scheduleTopUpCatchUp(t.id))
+}
+
 const useAfricaStore = create(
   persist(
     (set, get) => ({
@@ -244,6 +321,8 @@ const useAfricaStore = create(
     { name: 'dragonfly-africa-store-v2' }
   )
 )
+
+resumeInFlight()
 
 export { DEMO_SENDER_ID }
 export default useAfricaStore
