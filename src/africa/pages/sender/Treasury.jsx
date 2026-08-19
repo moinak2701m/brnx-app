@@ -4,6 +4,7 @@ import Input from '../../../components/ui/Input'
 import Button from '../../../components/ui/Button'
 import CountdownTimer from '../../../components/ui/CountdownTimer'
 import Badge from '../../../components/ui/Badge'
+import StatCard from '../../components/StatCard'
 import PipelineSteps, { TOPUP_STEPS } from '../../components/PipelineSteps'
 import useAfricaStore from '../../store'
 import { formatUSD, formatNGN } from '../../lib/fx'
@@ -61,10 +62,8 @@ export default function Treasury() {
       <h1 className="text-2xl font-bold text-[#111827] mb-1">Treasury</h1>
       <p className="text-[#6b7280] mb-6">Pre-fund your USD wallet so invoice payments settle instantly.</p>
 
-      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 inline-block mb-6">
-        <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-widest mb-1">Wallet Balance</p>
-        <p className="text-3xl font-bold text-[#111827]">{formatUSD(walletBalance)}</p>
-        <p className="text-xs text-[#9ca3af] mt-1">USDT · 1:1 USD</p>
+      <div className="mb-6">
+        <StatCard title="Wallet balance" value={formatUSD(walletBalance)} hint="USDT · 1:1 USD" />
       </div>
 
       <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6">
