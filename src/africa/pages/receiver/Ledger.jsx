@@ -85,7 +85,7 @@ export default function Ledger() {
         title="Transaction detail"
         subtitle={selected?.invoiceNumber}
       >
-        <TransactionDetailPanel invoice={selected} senderName={selected ? senderName(selected.senderId) : ''} />
+        <TransactionDetailPanel invoice={selected} counterpartyName={selected ? senderName(selected.senderId) : ''} />
       </SlideOver>
     </div>
   )

@@ -32,8 +32,9 @@ const SectionCard = ({ title, children }) => (
   </div>
 )
 
-export default function TransactionDetailPanel({ invoice, senderName }) {
+export default function TransactionDetailPanel({ invoice, counterpartyName, viewerRole = 'receiver' }) {
   if (!invoice) return null
+  const isSender = viewerRole === 'sender'
 
   return (
     <div className="flex flex-col gap-5">
@@ -48,13 +49,13 @@ export default function TransactionDetailPanel({ invoice, senderName }) {
       <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl px-5 py-4 flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-[#16a34a] uppercase tracking-wider">
-            {invoice.status === 'received_in_bank' ? 'Amount received' : 'Amount due'}
+            {invoice.status === 'received_in_bank' ? (isSender ? 'Amount paid' : 'Amount received') : 'Amount due'}
           </p>
           <p className="text-3xl font-bold text-[#16a34a] mt-0.5">{formatUSD(invoice.amountUSD)}</p>
         </div>
         {invoice.quote && (
           <div className="text-right">
-            <p className="text-xs text-[#9ca3af] uppercase tracking-wider">Sender pays</p>
+            <p className="text-xs text-[#9ca3af] uppercase tracking-wider">{isSender ? 'You pay' : 'Sender pays'}</p>
             <p className="text-xl font-semibold text-[#374151] mt-0.5">{formatNGN(invoice.quote.amountNGN)}</p>
           </div>
         )}
@@ -69,7 +70,7 @@ export default function TransactionDetailPanel({ invoice, senderName }) {
 
       <SectionCard title="Transaction summary">
         <DetailRow label="Invoice ID" value={invoice.invoiceNumber} />
-        <DetailRow label="Sender" value={senderName} />
+        <DetailRow label={isSender ? 'Receiver' : 'Sender'} value={counterpartyName} />
         <DetailRow label="Payment method" value={invoice.paymentMethod ? PAYMENT_METHOD_LABEL[invoice.paymentMethod] : 'Not yet chosen'} />
         <DetailRow label="Created" value={formatDate(invoice.timestamps?.created)} />
       </SectionCard>
@@ -77,12 +78,12 @@ export default function TransactionDetailPanel({ invoice, senderName }) {
       <SectionCard title="Exchange rate">
         {invoice.quote ? (
           <>
-            <DetailRow label="Sender sent" value={formatNGN(invoice.quote.amountNGN)} />
-            <DetailRow label="You receive" value={formatUSD(invoice.amountUSD)} />
+            <DetailRow label={isSender ? 'You sent' : 'Sender sent'} value={formatNGN(invoice.quote.amountNGN)} />
+            <DetailRow label={isSender ? 'Receiver gets' : 'You receive'} value={formatUSD(invoice.amountUSD)} />
             <DetailRow label="Rate" value={`1 USD = ${invoice.quote.rate} NGN`} />
           </>
         ) : (
-          <p className="text-sm text-[#9ca3af]">No rate information yet — the sender hasn't generated a quote.</p>
+          <p className="text-sm text-[#9ca3af]">No rate information yet — a quote hasn't been generated.</p>
         )}
       </SectionCard>
     </div>

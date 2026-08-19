@@ -1,12 +1,20 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ChevronRight } from 'lucide-react'
 import Badge from '../../../components/ui/Badge'
 import Button from '../../../components/ui/Button'
+import SlideOver from '../../components/SlideOver'
+import TransactionDetailPanel from '../../components/TransactionDetailPanel'
 import useAfricaStore, { DEMO_SENDER_ID } from '../../store'
 import { formatUSD } from '../../lib/fx'
 
 export default function SenderInvoices() {
   const navigate = useNavigate()
   const invoices = useAfricaStore((s) => s.invoices).filter((i) => i.senderId === DEMO_SENDER_ID)
+  const receiver = useAfricaStore((s) => s.receiver)
+  const [selectedId, setSelectedId] = useState(null)
+
+  const selected = invoices.find((i) => i.id === selectedId)
 
   return (
     <div>
@@ -24,26 +32,44 @@ export default function SenderInvoices() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv) => (
-              <tr key={inv.id} className="border-t border-[#f3f4f6] hover:bg-[#f9fafb] transition-colors">
-                <td className="px-4 py-3 font-medium text-[#111827]">{inv.invoiceNumber}</td>
-                <td className="px-4 py-3 text-[#6b7280]">{inv.description}</td>
-                <td className="px-4 py-3 font-mono text-[#111827]">{formatUSD(inv.amountUSD)}</td>
-                <td className="px-4 py-3">
-                  <Badge status={inv.status} />
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {inv.status === 'created' && (
-                    <Button size="sm" onClick={() => navigate(`/africa/sender/invoices/${inv.id}/pay`)}>
-                      Pay
-                    </Button>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {invoices.map((inv) => {
+              const clickable = !!inv.paymentMethod
+              return (
+                <tr
+                  key={inv.id}
+                  onClick={clickable ? () => setSelectedId(inv.id) : undefined}
+                  className={`border-t border-[#f3f4f6] hover:bg-[#f9fafb] transition-colors ${clickable ? 'cursor-pointer' : ''}`}
+                >
+                  <td className="px-4 py-3 font-medium text-[#111827]">{inv.invoiceNumber}</td>
+                  <td className="px-4 py-3 text-[#6b7280]">{inv.description}</td>
+                  <td className="px-4 py-3 font-mono text-[#111827]">{formatUSD(inv.amountUSD)}</td>
+                  <td className="px-4 py-3">
+                    <Badge status={inv.status} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {inv.status === 'created' ? (
+                      <Button size="sm" onClick={() => navigate(`/africa/sender/invoices/${inv.id}/pay`)}>
+                        Pay
+                      </Button>
+                    ) : (
+                      clickable && <ChevronRight size={16} className="text-[#9ca3af] inline-block" />
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
+
+      <SlideOver
+        open={!!selected}
+        onClose={() => setSelectedId(null)}
+        title="Transaction detail"
+        subtitle={selected?.invoiceNumber}
+      >
+        <TransactionDetailPanel invoice={selected} counterpartyName={receiver.name} viewerRole="sender" />
+      </SlideOver>
     </div>
   )
 }
