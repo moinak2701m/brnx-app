@@ -187,22 +187,11 @@ const useAfricaStore = create(
                 : i
             ),
           }))
-          setTimeout(() => {
-            set((state) => ({
-              invoices: state.invoices.map((i) =>
-                i.id === invoiceId
-                  ? {
-                      ...i,
-                      status: 'received_in_bank',
-                      timestamps: {
-                        ...i.timestamps,
-                        received_in_bank: new Date().toISOString(),
-                      },
-                    }
-                  : i
-              ),
-            }))
-          }, 2500)
+          // The bridge into the platform wallet is fast, but the actual
+          // bank settlement leg is a real off-ramp - let it ride the same
+          // ~5-minute catch-up cadence as everything else mid-flight,
+          // rather than a fake few-second timeout.
+          scheduleInvoiceCatchUp(invoiceId)
         }, 4500)
       },
 
@@ -241,22 +230,10 @@ const useAfricaStore = create(
                 : i
             ),
           }))
-          setTimeout(() => {
-            set((state) => ({
-              invoices: state.invoices.map((i) =>
-                i.id === invoiceId
-                  ? {
-                      ...i,
-                      status: 'received_in_bank',
-                      timestamps: {
-                        ...i.timestamps,
-                        received_in_bank: new Date().toISOString(),
-                      },
-                    }
-                  : i
-              ),
-            }))
-          }, 2000)
+          // Same real off-ramp wait as the bank-transfer path above -
+          // landing in the wallet is instant, settling to the receiver's
+          // bank still takes ~5 minutes.
+          scheduleInvoiceCatchUp(invoiceId)
         }, 1500)
         return true
       },
