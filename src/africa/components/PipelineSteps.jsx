@@ -28,12 +28,16 @@ const formatWhen = (iso) => {
 
 export default function PipelineSteps({ status, timestamps = {}, steps = INVOICE_STEPS }) {
   const currentIndex = steps.findIndex((s) => s.key === status)
+  // The last step in the list has nothing left to progress to, so once
+  // reached it reads as complete (green check) rather than in-progress
+  // (blue number) - e.g. a treasury top-up is done once it's in the wallet.
+  const isFinalStep = currentIndex === steps.length - 1
 
   return (
     <div className="flex w-full items-start">
       {steps.map((step, i) => {
-        const done = i < currentIndex
-        const active = i === currentIndex
+        const done = i < currentIndex || (i === currentIndex && isFinalStep)
+        const active = i === currentIndex && !isFinalStep
         const upcoming = i > currentIndex
 
         return (

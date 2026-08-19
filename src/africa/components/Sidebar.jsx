@@ -23,7 +23,7 @@ export default function Sidebar() {
   if (!links.length) return null
 
   return (
-    <aside className="w-[220px] flex-shrink-0 h-full bg-white border-r border-[#e5e7eb] flex flex-col py-6">
+    <aside className="w-48 flex-shrink-0 h-full bg-white border-r border-[#f3f4f6] flex flex-col py-6">
       <nav className="px-3 flex flex-col gap-0.5">
         {links.map(({ to, icon: Icon, label, end }) => (
           <NavLink

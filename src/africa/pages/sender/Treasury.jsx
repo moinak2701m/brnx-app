@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Wallet, Copy } from 'lucide-react'
+import { Copy } from 'lucide-react'
 import Input from '../../../components/ui/Input'
 import Button from '../../../components/ui/Button'
 import CountdownTimer from '../../../components/ui/CountdownTimer'
@@ -14,6 +14,7 @@ export default function Treasury() {
   const topUps = useAfricaStore((s) => s.treasuryTopUps)
   const initiateTreasuryTopUp = useAfricaStore((s) => s.initiateTreasuryTopUp)
   const confirmTreasuryTransferSent = useAfricaStore((s) => s.confirmTreasuryTransferSent)
+  const declineTreasuryTopUp = useAfricaStore((s) => s.declineTreasuryTopUp)
 
   const [step, setStep] = useState('form') // form | bank-details | status
   const [amountUSD, setAmountUSD] = useState('')
@@ -42,6 +43,13 @@ export default function Treasury() {
     setStep('status')
   }
 
+  const declineQuote = () => {
+    declineTreasuryTopUp(topUp.id)
+    setTopUp(null)
+    setExpired(false)
+    setStep('form')
+  }
+
   const startOver = () => {
     setStep('form')
     setAmountUSD('')
@@ -53,16 +61,13 @@ export default function Treasury() {
       <h1 className="text-2xl font-bold text-[#111827] mb-1">Treasury</h1>
       <p className="text-[#6b7280] mb-6">Pre-fund your USD wallet so invoice payments settle instantly.</p>
 
-      <div className="bg-gradient-to-br from-[#0061D3] to-[#00326D] rounded-2xl p-6 text-white mb-6">
-        <div className="flex items-center gap-2 mb-2 opacity-80">
-          <Wallet size={16} />
-          <span className="text-xs font-semibold uppercase tracking-wide">Wallet balance</span>
-        </div>
-        <p className="text-3xl font-bold">{formatUSD(walletBalance)}</p>
-        <p className="text-xs opacity-70 mt-1">USDT · 1:1 USD</p>
+      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 inline-block mb-6">
+        <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-widest mb-1">Wallet Balance</p>
+        <p className="text-3xl font-bold text-[#111827]">{formatUSD(walletBalance)}</p>
+        <p className="text-xs text-[#9ca3af] mt-1">USDT · 1:1 USD</p>
       </div>
 
-      <div className="bg-white border border-[#e5e7eb] rounded-2xl p-6">
+      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6">
         {step === 'form' && (
           <div className="flex flex-col gap-4">
             <p className="text-sm font-semibold text-[#111827]">Top up wallet</p>
@@ -83,7 +88,7 @@ export default function Treasury() {
           <div className="flex flex-col gap-5">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Live quote</span>
+                <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">Live quote</span>
                 {!expired ? (
                   <CountdownTimer expiresAt={topUp.quote.expiresAt} onExpire={() => setExpired(true)} />
                 ) : (
@@ -122,15 +127,20 @@ export default function Treasury() {
               ))}
             </div>
 
-            {expired ? (
-              <Button variant="ghost" fullWidth onClick={refreshQuote}>
-                Refresh quote
+            <div className="flex gap-3">
+              <Button variant="ghost" fullWidth onClick={declineQuote}>
+                Decline
               </Button>
-            ) : (
-              <Button variant="primary" fullWidth onClick={confirmTransferSent}>
-                I've sent the transfer
-              </Button>
-            )}
+              {expired ? (
+                <Button variant="primary" fullWidth onClick={refreshQuote}>
+                  Refresh quote
+                </Button>
+              ) : (
+                <Button variant="primary" fullWidth onClick={confirmTransferSent}>
+                  I've sent the transfer
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -154,9 +164,9 @@ export default function Treasury() {
       {topUps.length > 0 && (
         <div className="mt-6">
           <p className="text-sm font-semibold text-[#111827] mb-3">Top-up history</p>
-          <div className="bg-white border border-[#e5e7eb] rounded-2xl divide-y divide-[#f3f4f6]">
+          <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] divide-y divide-[#f3f4f6]">
             {topUps.map((t) => (
-              <div key={t.id} className="flex items-center justify-between p-4 text-sm">
+              <div key={t.id} className="flex items-center justify-between p-4 text-sm hover:bg-[#f9fafb] transition-colors">
                 <span className="text-[#6b7280]">
                   {t.timestamps?.created
                     ? new Date(t.timestamps.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

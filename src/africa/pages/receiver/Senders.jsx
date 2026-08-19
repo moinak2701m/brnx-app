@@ -27,13 +27,16 @@ export default function Senders() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-[#111827]">Senders</h1>
-        <Button size="sm" onClick={() => setShowForm((v) => !v)}>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="inline-flex items-center bg-[#0061D3] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#0052b3] transition-colors"
+        >
           <Plus size={14} className="mr-1" /> Add sender
-        </Button>
+        </button>
       </div>
 
       {showForm && (
-        <div className="bg-white border border-[#e5e7eb] rounded-2xl p-5 mb-6 flex flex-col gap-3">
+        <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-5 mb-6 flex flex-col gap-3">
           <Input label="Sender name" placeholder="e.g. Abuja Traders Ltd" value={name} onChange={(e) => setName(e.target.value)} />
           <Input label="Country" placeholder="Nigeria" value={country} onChange={(e) => setCountry(e.target.value)} />
           <Button onClick={handleAdd} disabled={!name}>Save sender</Button>
@@ -42,7 +45,7 @@ export default function Senders() {
 
       <div className="grid grid-cols-2 gap-4">
         {senders.map((s) => (
-          <div key={s.id} className="bg-white border border-[#e5e7eb] rounded-2xl p-5 flex items-center gap-4">
+          <div key={s.id} className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-5 flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-[#eff6ff] flex items-center justify-center flex-shrink-0">
               <Users size={18} className="text-[#1a56db]" />
             </div>

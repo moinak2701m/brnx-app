@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Wallet, FileText, Clock3 } from 'lucide-react'
 import Button from '../../../components/ui/Button'
 import Badge from '../../../components/ui/Badge'
 import StatCard from '../../components/StatCard'
@@ -29,9 +28,9 @@ export default function SenderHome() {
       <p className="text-[#6b7280] mb-6">Pending invoices and treasury overview</p>
 
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <StatCard title="Treasury wallet" value={formatUSD(walletBalance)} icon={Wallet} hint="USDT · 1:1 USD" />
-        <StatCard title="Pending invoices" value={pending.length} icon={Clock3} />
-        <StatCard title="Total paid" value={formatUSD(paidTotal)} icon={FileText} />
+        <StatCard title="Treasury wallet" value={formatUSD(walletBalance)} hint="USDT · 1:1 USD" />
+        <StatCard title="Pending invoices" value={pending.length} />
+        <StatCard title="Total paid" value={formatUSD(paidTotal)} />
       </div>
 
       <div className="flex items-center justify-between mb-3">
@@ -42,13 +41,13 @@ export default function SenderHome() {
       </div>
 
       {pending.length === 0 ? (
-        <div className="bg-white border border-[#e5e7eb] rounded-2xl p-8 text-center text-sm text-[#9ca3af]">
+        <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-8 text-center text-sm text-[#9ca3af]">
           No pending invoices right now.
         </div>
       ) : (
-        <div className="bg-white border border-[#e5e7eb] rounded-2xl divide-y divide-[#f3f4f6]">
+        <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] divide-y divide-[#f3f4f6]">
           {pending.map((inv) => (
-            <div key={inv.id} className="flex items-center justify-between p-4">
+            <div key={inv.id} className="flex items-center justify-between p-4 hover:bg-[#f9fafb] transition-colors">
               <div>
                 <p className="text-sm font-semibold text-[#111827]">{inv.invoiceNumber} · {inv.description}</p>
                 <p className="text-xs text-[#9ca3af] mt-0.5">{formatUSD(inv.amountUSD)}</p>

@@ -70,7 +70,7 @@ export const MOCK_INVOICES = [
     description: 'Freight & logistics — February',
     amountUSD: 680,
     fileName: null,
-    status: 'received_in_wallet',
+    status: 'received_in_bank',
     quote: { rate: 1401.2, amountUSD: 680, amountNGN: 952816 },
     paymentMethod: 'bank_transfer',
     timestamps: {
@@ -78,6 +78,7 @@ export const MOCK_INVOICES = [
       created: '2026-07-10T08:30:00Z',
       payment_initiated: '2026-07-12T16:20:00Z',
       received_in_wallet: '2026-07-12T16:24:00Z',
+      received_in_bank: '2026-07-12T16:26:00Z',
     },
   },
   {

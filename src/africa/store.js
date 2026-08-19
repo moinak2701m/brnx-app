@@ -78,6 +78,9 @@ const useAfricaStore = create(
 
       // Bank-transfer path: a real wait. Confirming just means "I've sent
       // the NGN transfer" - the platform still has to receive + bridge it.
+      // The receiver has no treasury function - every invoice off-ramps
+      // straight to their bank automatically. "received_in_wallet" is
+      // shown only as a brief transient stage, not a resting balance.
       confirmBankTransfer: (invoiceId) => {
         const now = new Date().toISOString()
         set((state) => ({
@@ -107,11 +110,28 @@ const useAfricaStore = create(
                 : i
             ),
           }))
+          setTimeout(() => {
+            set((state) => ({
+              invoices: state.invoices.map((i) =>
+                i.id === invoiceId
+                  ? {
+                      ...i,
+                      status: 'received_in_bank',
+                      timestamps: {
+                        ...i.timestamps,
+                        received_in_bank: new Date().toISOString(),
+                      },
+                    }
+                  : i
+              ),
+            }))
+          }, 2500)
         }, 4500)
       },
 
       // Wallet path: funds are already USD in the sender's wallet, so
       // there's no FX/bridge step left to wait on - it just confirms fast.
+      // Still auto-off-ramps to the receiver's bank the same as above.
       payFromWallet: (invoiceId) => {
         const invoice = get().invoices.find((i) => i.id === invoiceId)
         if (!invoice || get().senderWallet.balanceUSD < invoice.amountUSD) return false
@@ -144,6 +164,22 @@ const useAfricaStore = create(
                 : i
             ),
           }))
+          setTimeout(() => {
+            set((state) => ({
+              invoices: state.invoices.map((i) =>
+                i.id === invoiceId
+                  ? {
+                      ...i,
+                      status: 'received_in_bank',
+                      timestamps: {
+                        ...i.timestamps,
+                        received_in_bank: new Date().toISOString(),
+                      },
+                    }
+                  : i
+              ),
+            }))
+          }, 2000)
         }, 1500)
         return true
       },
@@ -173,6 +209,14 @@ const useAfricaStore = create(
         return topUp
       },
 
+      // Declining before the transfer is sent means nothing actually
+      // happened - drop the pending record rather than leaving a
+      // "created" stub sitting in history forever.
+      declineTreasuryTopUp: (topUpId) =>
+        set((state) => ({
+          treasuryTopUps: state.treasuryTopUps.filter((t) => t.id !== topUpId),
+        })),
+
       confirmTreasuryTransferSent: (topUpId) => {
         const now = new Date().toISOString()
         set((state) => ({
@@ -196,35 +240,6 @@ const useAfricaStore = create(
         }, 4500)
       },
 
-      // Receiver's wallet balance is derived (sum of invoices sitting in
-      // received_in_wallet) rather than stored, so it can never desync
-      // from the invoice list.
-      getReceiverWalletBalance: () =>
-        get().invoices
-          .filter((i) => i.status === 'received_in_wallet')
-          .reduce((sum, i) => sum + i.amountUSD, 0),
-
-      withdrawInvoiceToBank: (invoiceId) => {
-        const now = new Date().toISOString()
-        set((state) => ({
-          invoices: state.invoices.map((i) =>
-            i.id === invoiceId && i.status === 'received_in_wallet'
-              ? { ...i, status: 'received_in_bank', timestamps: { ...i.timestamps, received_in_bank: now } }
-              : i
-          ),
-        }))
-      },
-
-      withdrawAllToBank: () => {
-        const now = new Date().toISOString()
-        set((state) => ({
-          invoices: state.invoices.map((i) =>
-            i.status === 'received_in_wallet'
-              ? { ...i, status: 'received_in_bank', timestamps: { ...i.timestamps, received_in_bank: now } }
-              : i
-          ),
-        }))
-      },
     }),
     { name: 'dragonfly-africa-store-v2' }
   )

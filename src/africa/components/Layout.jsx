@@ -23,11 +23,11 @@ export default function Layout() {
 
   return (
     <div className="flex w-full min-h-screen bg-[#f9fafb]">
-      <div className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#e5e7eb] flex items-center px-5 gap-4 z-40">
+      <div className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-[#f3f4f6] flex items-center px-5 gap-4 z-40">
         <a href="/" className="flex items-center gap-1.5 text-sm font-medium text-[#6b7280] hover:text-[#111827]">
           <ArrowLeft size={15} /> All demos
         </a>
-        <div className="h-5 w-px bg-[#e5e7eb]" />
+        <div className="h-5 w-px bg-[#f3f4f6]" />
         <img src="/assets/dragonfly-logo.svg" alt="Dragonfly" className="h-5 w-auto" />
         <span className="text-sm font-semibold text-[#111827]">Africa Invoice Payments</span>
 

@@ -40,7 +40,7 @@ export default function KybUpload() {
         A one-time basic KYB check before you can pay invoices on Dragonfly.
       </p>
 
-      <div className="bg-white border border-[#e5e7eb] rounded-2xl p-6 flex flex-col gap-4">
+      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-4">
         <Input label="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
         <Dropdown label="Business type" value={businessType} onChange={setBusinessType} options={BUSINESS_TYPES} />
         <Input

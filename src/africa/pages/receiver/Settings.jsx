@@ -29,7 +29,7 @@ export default function Settings() {
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl font-bold text-[#111827] mb-6">Payout bank account</h1>
 
-      <div className="bg-white border border-[#e5e7eb] rounded-2xl p-6 flex flex-col gap-4">
+      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-4">
         <Input label="Bank name" value={form.bankName} onChange={set('bankName')} />
         <Input label="Account name" value={form.accountName} onChange={set('accountName')} />
         <Input label="Account number" value={form.accountNumber} onChange={set('accountNumber')} />

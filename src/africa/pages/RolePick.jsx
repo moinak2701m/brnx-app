@@ -29,7 +29,7 @@ export default function RolePick() {
       <div className="grid grid-cols-2 gap-5">
         <button
           onClick={pickSender}
-          className="text-left bg-white border border-[#e5e7eb] rounded-2xl p-6 hover:border-[#1a56db] transition-colors"
+          className="text-left bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 hover:border-[#1a56db] transition-colors"
         >
           <div className="w-11 h-11 rounded-xl bg-[#eff6ff] flex items-center justify-center mb-4">
             <Send size={20} className="text-[#1a56db]" />
@@ -42,7 +42,7 @@ export default function RolePick() {
 
         <button
           onClick={pickReceiver}
-          className="text-left bg-white border border-[#e5e7eb] rounded-2xl p-6 hover:border-[#1a56db] transition-colors"
+          className="text-left bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 hover:border-[#1a56db] transition-colors"
         >
           <div className="w-11 h-11 rounded-xl bg-[#eff6ff] flex items-center justify-center mb-4">
             <Building2 size={20} className="text-[#1a56db]" />

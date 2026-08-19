@@ -12,6 +12,7 @@ export default function PayInvoice() {
   const { invoiceId } = useParams()
   const navigate = useNavigate()
   const invoice = useAfricaStore((s) => s.invoices.find((i) => i.id === invoiceId))
+  const receiver = useAfricaStore((s) => s.receiver)
   const walletBalance = useAfricaStore((s) => s.senderWallet.balanceUSD)
   const generateInvoiceQuote = useAfricaStore((s) => s.generateInvoiceQuote)
   const confirmBankTransfer = useAfricaStore((s) => s.confirmBankTransfer)
@@ -41,6 +42,10 @@ export default function PayInvoice() {
   }
 
   const payViaWallet = () => {
+    setStep('confirm-wallet')
+  }
+
+  const confirmWalletPayment = () => {
     payFromWallet(invoice.id)
     setStep('status')
   }
@@ -48,6 +53,12 @@ export default function PayInvoice() {
   const confirmTransferSent = () => {
     confirmBankTransfer(invoice.id)
     setStep('status')
+  }
+
+  const declineQuote = () => {
+    generateInvoiceQuote(invoice.id)
+    setExpired(false)
+    setStep('quote')
   }
 
   return (
@@ -59,17 +70,17 @@ export default function PayInvoice() {
         <ArrowLeft size={14} /> Back to invoices
       </button>
 
-      <div className="bg-white border border-[#e5e7eb] rounded-2xl p-6 mb-5">
-        <p className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">{invoice.invoiceNumber}</p>
+      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 mb-5">
+        <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">{invoice.invoiceNumber}</p>
         <h1 className="text-lg font-bold text-[#111827] mt-1">{invoice.description}</h1>
         <p className="text-2xl font-bold text-[#111827] mt-3">{formatUSD(invoice.amountUSD)}</p>
       </div>
 
       {step === 'quote' && invoice.quote && (
-        <div className="bg-white border border-[#e5e7eb] rounded-2xl p-6 flex flex-col gap-5">
+        <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-5">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Live quote</span>
+              <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">Live quote</span>
               {!expired ? (
                 <CountdownTimer expiresAt={invoice.quote.expiresAt} onExpire={() => setExpired(true)} />
               ) : (
@@ -126,7 +137,7 @@ export default function PayInvoice() {
       )}
 
       {step === 'bank-details' && (
-        <div className="bg-white border border-[#e5e7eb] rounded-2xl p-6 flex flex-col gap-4">
+        <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-4">
           <p className="text-sm font-semibold text-[#111827]">Transfer {formatNGN(invoice.quote.amountNGN)} to:</p>
           {[
             ['Bank', ONRAMP_PARTNER_BANK.bankName],
@@ -145,18 +156,58 @@ export default function PayInvoice() {
           <p className="text-xs text-[#9ca3af]">
             Include the reference so we can match your payment automatically.
           </p>
-          <Button variant="primary" fullWidth onClick={confirmTransferSent}>
-            I've sent the transfer
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="ghost" fullWidth onClick={declineQuote}>
+              Decline
+            </Button>
+            <Button variant="primary" fullWidth onClick={confirmTransferSent}>
+              I've sent the transfer
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 'confirm-wallet' && invoice.quote && (
+        <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-5">
+          <p className="text-sm font-semibold text-[#111827]">Pay from treasury wallet</p>
+          <div>
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-[#6b7280]">Amount</span>
+              <span className="font-mono font-semibold text-[#111827]">{formatUSD(invoice.amountUSD)}</span>
+            </div>
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-[#6b7280]">Wallet balance</span>
+              <span className="font-mono text-[#111827]">{formatUSD(walletBalance)}</span>
+            </div>
+            <div className="flex justify-between text-sm py-1 border-t border-[#f3f4f6] mt-1 pt-2 font-semibold">
+              <span className="text-[#111827]">Balance after payment</span>
+              <span className="font-mono text-[#111827]">{formatUSD(walletBalance - invoice.amountUSD)}</span>
+            </div>
+          </div>
+          <p className="text-xs text-[#9ca3af]">
+            This settles instantly — no bank transfer needed, the FX already happened when you funded your wallet.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="ghost" fullWidth onClick={declineQuote}>
+              Decline
+            </Button>
+            <Button variant="primary" fullWidth onClick={confirmWalletPayment}>
+              Confirm & pay
+            </Button>
+          </div>
         </div>
       )}
 
       {step === 'status' && (
-        <div className="bg-white border border-[#e5e7eb] rounded-2xl p-6">
+        <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-6">
           <div className="mb-8 mt-2 overflow-x-auto">
             <PipelineSteps status={invoice.status} timestamps={invoice.timestamps} />
           </div>
-          {invoice.status === 'received_in_wallet' || invoice.status === 'received_in_bank' ? (
+          {invoice.status === 'received_in_bank' ? (
+            <div className="flex items-center gap-2 text-[#16a34a] text-sm font-semibold mb-4">
+              <CheckCircle2 size={16} /> Payment complete — received by {receiver.name}
+            </div>
+          ) : invoice.status === 'received_in_wallet' ? (
             <div className="flex items-center gap-2 text-[#16a34a] text-sm font-semibold mb-4">
               <CheckCircle2 size={16} /> Payment on its way to the receiver
             </div>
