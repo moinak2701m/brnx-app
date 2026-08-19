@@ -43,9 +43,9 @@ export default function Senders() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] divide-y divide-[#f3f4f6]">
         {senders.map((s) => (
-          <div key={s.id} className="bg-white border border-[#e5e7eb] rounded-xl shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.06)] p-5 flex items-center gap-4">
+          <div key={s.id} className="flex items-center gap-4 p-4 hover:bg-[#f9fafb] transition-colors">
             <div className="w-10 h-10 rounded-xl bg-[#eff6ff] flex items-center justify-center flex-shrink-0">
               <Users size={18} className="text-[#1a56db]" />
             </div>
